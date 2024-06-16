@@ -1,13 +1,13 @@
 #include "BitBoard.h"
 
-Bitboard BitBoard::set(Bitboard board, uint8 position)
+void BitBoard::set(Bitboard &board, uint8 position)
 {
-    return board | (1ULL << position);
+    board |= 1ULL << position;
 }
 
-Bitboard BitBoard::clear(Bitboard board, uint8 position)
+void BitBoard::clear(Bitboard &board, uint8 position)
 {
-    return board & ~(1ULL << position);
+    board &= ~(1ULL << position);
 }
 
 bool BitBoard::isSet(Bitboard board, uint8 position)

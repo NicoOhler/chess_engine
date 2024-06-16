@@ -5,7 +5,8 @@ void Game::loop()
     do
     {
         printBoard();
-        Move move = getLegalMoveFromUser();
+        std::vector<Move> moves = moveGenerator.generateMoves(board);
+        Move move = getLegalMoveFromUser(moves);
         applyMove(move);
         board.white_to_move = !board.white_to_move;
     } while (!isGameOver());
@@ -31,7 +32,7 @@ void Game::printBoard()
               << std::endl;
 }
 
-Move Game::getLegalMoveFromUser()
+Move Game::getLegalMoveFromUser(std::vector<Move> legal_moves)
 {
     // allow only positions from a1 to h8
     // todo add support for proper chess notation
@@ -62,8 +63,11 @@ Move Game::getLegalMoveFromUser()
         move.piece = printable_board[7 - from_row][from_col]; // printable_board is upside down
 
         std::cout << std::endl;
-        return move;
-        // todo if (isLegalMove(move))
+
+        // return move if legal
+        for (Move legal_move : legal_moves)
+            if (move == legal_move)
+                return move;
         std::cout << "Illegal move. Please enter a legal move." << std::endl;
     }
 }

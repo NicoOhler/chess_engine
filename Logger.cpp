@@ -27,19 +27,20 @@ Logger *Logger::GetInstance()
     return instance;
 }
 
-void Logger::log(std::string message, LogType logType)
+// todo rewrite to check if logType is active and only then start building the string
+// #define ...
+void Logger::log(LogType logType, std::string message)
 {
-    if (logType.active)
-    {
-        if (print_to_console)
-            std::cout << logType.name << ": " << message << std::endl;
+    // todo print logType
+    if (print_to_console)
+        std::cout << message << std::endl;
 
-        if (file.is_open())
-            file << logType.name << ": " << message << std::endl;
-    }
+    if (file.is_open())
+        file << message << std::endl;
 }
 
-void log(std::string message, LogType logType)
+void log(LogType logType, std::string message)
 {
-    Logger::GetInstance()->log(message, logType);
+    if (logType & LOG_TYPE_ENABLED)
+        Logger::GetInstance()->log(logType, message);
 }

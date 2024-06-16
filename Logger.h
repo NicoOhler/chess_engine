@@ -3,7 +3,9 @@
 #include "iostream"
 #include <fstream>
 
-void log(std::string message, LogType logType);
+typedef uint64 LogType;
+
+void log(LogType logType, std::string message);
 
 class Logger
 {
@@ -18,6 +20,6 @@ public:
     Logger(Logger &other) = delete;
     void operator=(const Logger &) = delete;
     static Logger *GetInstance();
-    void log(std::string message, LogType logType);
+    void log(LogType logType, std::string message);
     ~Logger();
 };

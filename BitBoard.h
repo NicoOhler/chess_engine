@@ -17,11 +17,14 @@
 #define BLACK_QUEENS_START 0x0800000000000000
 #define BLACK_KING_START 0x1000000000000000
 
+#define WHITE_PIECES 0x000000000000FFFF
+#define BLACK_PIECES 0xFFFF000000000000
+
 namespace BitBoard
 {
     struct Board
     {
-        Board() : white_to_move(true), white_pawns(WHITE_PAWNS_START), white_rooks(WHITE_ROOKS_START), white_knights(WHITE_KNIGHTS_START), white_bishops(WHITE_BISHOPS_START), white_queens(WHITE_QUEENS_START), white_king(WHITE_KING_START), black_pawns(BLACK_PAWNS_START), black_rooks(BLACK_ROOKS_START), black_knights(BLACK_KNIGHTS_START), black_bishops(BLACK_BISHOPS_START), black_queens(BLACK_QUEENS_START), black_king(BLACK_KING_START), occupied(0), occupied_by_white(0), occupied_by_black(0), squares_under_attack(0) {}
+        Board() : white_to_move(true), white_pawns(WHITE_PAWNS_START), white_rooks(WHITE_ROOKS_START), white_knights(WHITE_KNIGHTS_START), white_bishops(WHITE_BISHOPS_START), white_queens(WHITE_QUEENS_START), white_king(WHITE_KING_START), black_pawns(BLACK_PAWNS_START), black_rooks(BLACK_ROOKS_START), black_knights(BLACK_KNIGHTS_START), black_bishops(BLACK_BISHOPS_START), black_queens(BLACK_QUEENS_START), black_king(BLACK_KING_START), occupied(WHITE_PIECES | BLACK_PIECES), occupied_by_white(WHITE_PIECES), occupied_by_black(BLACK_PIECES), squares_under_attack(0) {}
         bool white_to_move;
         Bitboard white_pawns;
         Bitboard white_rooks;
@@ -43,8 +46,8 @@ namespace BitBoard
         Bitboard squares_under_attack;
     };
 
-    Bitboard set(Bitboard board, uint8 position);
-    Bitboard clear(Bitboard board, uint8 position);
+    void set(Bitboard &board, uint8 position);
+    void clear(Bitboard &board, uint8 position);
     bool isSet(Bitboard board, uint8 position);
     Position clearRightmostSetBit(Bitboard &board); // sets the rightmost set bit to 0 and returns its index
 }
