@@ -3,8 +3,7 @@
 #include "iostream"
 #include <fstream>
 
-typedef uint64 LogType;
-
+typedef int LogType;
 void log(LogType logType, std::string message);
 
 class Logger

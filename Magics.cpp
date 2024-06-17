@@ -4,7 +4,7 @@
 // e.g. rook on a1 can move to 14 squares (a2-a8, b1-h1)
 // but pieces on a8 and h1 do not block squares behind them
 // so only 12 bits are relevant
-uint8 ROOK_RELEVANT_SQUARES[64] = {
+uint8 ROOK_RELEVANT_SQUARES[NUM_SQUARES] = {
     12, 11, 11, 11, 11, 11, 11, 12,
     11, 10, 10, 10, 10, 10, 10, 11,
     11, 10, 10, 10, 10, 10, 10, 11,
@@ -14,7 +14,7 @@ uint8 ROOK_RELEVANT_SQUARES[64] = {
     11, 10, 10, 10, 10, 10, 10, 11,
     12, 11, 11, 11, 11, 11, 11, 12};
 
-uint8 BISHOP_RELEVANT_SQUARES[64] = {
+uint8 BISHOP_RELEVANT_SQUARES[NUM_SQUARES] = {
     6, 5, 5, 5, 5, 5, 5, 6,
     5, 5, 5, 5, 5, 5, 5, 5,
     5, 5, 7, 7, 7, 7, 5, 5,
@@ -26,7 +26,7 @@ uint8 BISHOP_RELEVANT_SQUARES[64] = {
 
 // magic numbers - precomputed
 // https://github.com/bartekspitza/sophia/
-Bitboard ROOK_MAGICS[64] = {
+Bitboard ROOK_MAGICS[NUM_SQUARES] = {
     0xa8002c000108020ULL,
     0x6c00049b0002001ULL,
     0x100200010090040ULL,
@@ -94,7 +94,7 @@ Bitboard ROOK_MAGICS[64] = {
 };
 
 // bishop magic number
-Bitboard BISHOP_MAGICS[64] = {
+Bitboard BISHOP_MAGICS[NUM_SQUARES] = {
     0x89a1121896040240ULL,
     0x2004844802002010ULL,
     0x2068080051921000ULL,

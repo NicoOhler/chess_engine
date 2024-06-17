@@ -16,7 +16,7 @@ struct Move
 
     bool operator==(const Move &rhs)
     {
-        return from == rhs.from && to == rhs.to && piece == rhs.piece;
+        return from == rhs.from && to == rhs.to && piece == rhs.piece; // piece is not necessary for move equality
     }
 };
 
@@ -24,39 +24,41 @@ class MoveGenerator
 {
 private:
     // attack masks
-    Bitboard white_pawn_attack_right[64];
-    Bitboard white_pawn_attack_left[64];
-    Bitboard black_pawn_attack_right[64];
-    Bitboard black_pawn_attack_left[64];
-    Bitboard knight_moves[64];
-    Bitboard bishop_moves[64];
-    Bitboard rook_moves[64];
-    Bitboard king_moves[64];
+    Bitboard white_pawn_attack_right[NUM_SQUARES];
+    Bitboard white_pawn_attack_left[NUM_SQUARES];
+    Bitboard black_pawn_attack_right[NUM_SQUARES];
+    Bitboard black_pawn_attack_left[NUM_SQUARES];
+    Bitboard knight_moves[NUM_SQUARES];
+    Bitboard queen_moves[NUM_SQUARES];
+    Bitboard king_moves[NUM_SQUARES];
 
     // precomputed attacks for sliding pieces
-    Bitboard bishop_attacks[64][512];
-    Bitboard rook_attacks[64][4096];
+    Bitboard bishop_blockers[NUM_SQUARES];
+    Bitboard rook_blockers[NUM_SQUARES];
+    Bitboard bishop_attacks[NUM_SQUARES][512];
+    Bitboard rook_attacks[NUM_SQUARES][4096];
 
     void initializePawnCaptureMasks();
     void initializeKnightMoves();
-    void initializeBishopMoves();
-    void initializeRookMoves();
+    void initializeBishopBlockers();
+    void initializeRookBlockers();
     void initializeKingMoves();
 
-    std::vector<Move> generatePawnMoves(Board board);
-    std::vector<Move> generateKnightMoves(Board board);
-    std::vector<Move> generateBishopMoves(Board board);
-    std::vector<Move> generateRookMoves(Board board);
-    std::vector<Move> generateQueenMoves(Board board);
-    std::vector<Move> generateKingMoves(Board board);
-    // ? void generateCastlingMoves(Board board, Move moves[]);
+    std::vector<Move> generateKingMoves(Board &board);
+    std::vector<Move> generatePawnMoves(Board &board);
+    std::vector<Move> generateKnightMoves(Board &board);
+    std::vector<Move> generateBishopMoves(Board &board);
+    std::vector<Move> generateRookMoves(Board &board);
+    std::vector<Move> generateQueenMoves(Board &board);
+    // ? void generateCastlingMoves(Board &board, Move moves[]);
 
-    Bitboard getOccupancyVariation(int index, int relevant_bits, Bitboard moves); // returns index-th occupancy variation of moves
+    // precomputed attacks for sliding pieces (bishop and rook) using magic bitboards
     void initializeRookBishopAttacks();                                           // precomputes squares under attack for every position for every relevant occupancy
+    Bitboard getOccupancyVariation(int index, int relevant_bits, Bitboard moves); // returns index-th occupancy variation of moves
     Bitboard precomputeSlidingRookAttacks(Position square, Bitboard occupied);
     Bitboard precomputeSlidingBishopAttacks(Position square, Bitboard occupied);
 
 public:
     MoveGenerator();
-    std::vector<Move> generateMoves(Board board);
+    std::vector<Move> generateMoves(Board &board);
 };

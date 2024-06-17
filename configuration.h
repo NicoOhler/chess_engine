@@ -1,24 +1,20 @@
 #pragma once
 #include <string>
-#define LOG_FILE "log.txt" // does not write to file if empty string
-#define LOG_TO_CONSOLE true
-#define APPEND_TO_FILE false
 
-#define LOG_TYPE_ENABLED 0x1
-#define WHITE 0x2
+typedef int LogType;
 
-#define CHESS_BOARD (WHITE | LOG_TYPE_ENABLED)
+const std::string LOG_FILE = "log.txt"; // does not write to file if empty string
+const bool LOG_TO_CONSOLE = true;
+const bool APPEND_TO_FILE = false;
 
-#define MOVE_GENERATOR (WHITE | LOG_TYPE_ENABLED)
+const LogType LOG_TYPE_ENABLED = 0x1;
+const LogType WHITE = 0x2;
 
-#define PAWN_MOVE (WHITE | LOG_TYPE_ENABLED)
-
-#define KNIGHT_MOVE (WHITE | LOG_TYPE_ENABLED)
-
-#define BISHOP_MOVE (WHITE | LOG_TYPE_ENABLED)
-
-#define ROOK_MOVE (WHITE | LOG_TYPE_ENABLED)
-
-#define QUEEN_MOVE (WHITE | LOG_TYPE_ENABLED)
-
-#define KING_MOVE (WCHAR_MIN | LOG_TYPE_ENABLED)
+const LogType CHESS_BOARD = WHITE | LOG_TYPE_ENABLED;
+const LogType MOVE_GENERATOR = WHITE | LOG_TYPE_ENABLED;
+const LogType PAWN_MOVE = WHITE | LOG_TYPE_ENABLED;
+const LogType KNIGHT_MOVE = WHITE | LOG_TYPE_ENABLED;
+const LogType BISHOP_MOVE = WHITE | LOG_TYPE_ENABLED;
+const LogType ROOK_MOVE = WHITE | LOG_TYPE_ENABLED;
+const LogType QUEEN_MOVE = WHITE | LOG_TYPE_ENABLED;
+const LogType KING_MOVE = WCHAR_MIN | LOG_TYPE_ENABLED;

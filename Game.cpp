@@ -106,6 +106,7 @@ Bitboard Game::getBitboardByPiece(char piece)
 
 void Game::applyMove(Move move)
 {
+    // ? getBitboardByPiece returns no reference?
     Bitboard piece = getBitboardByPiece(move.piece);
     BitBoard::clear(piece, 1ULL << move.from);
     BitBoard::set(piece, 1ULL << move.to);
