@@ -107,8 +107,19 @@ Bitboard *Game::getBitboardByPiece(char piece)
 void Game::applyMove(Move move)
 {
     Bitboard *piece = getBitboardByPiece(move.piece);
-    BitBoard::clear(*piece, move.from);
-    BitBoard::set(*piece, move.to);
+    Bitboard *opponent_pieces = board.white_to_move ? &board.black_pieces : &board.white_pieces;
+    Bitboard *own_pieces = board.white_to_move ? &board.white_pieces : &board.black_pieces;
+
+    char captured_piece = printable_board[7 - move.to / 8][move.to % 8];
+    if (captured_piece != ' ') // remove any captured piece
+    {
+        BitBoard::clear(*getBitboardByPiece(captured_piece), move.to);
+        BitBoard::clear(*opponent_pieces, move.to);
+    }
+
+    BitBoard::movePiece(*piece, move.from, move.to);
+    BitBoard::movePiece(*own_pieces, move.from, move.to);
+    BitBoard::movePiece(board.occupied, move.from, move.to);
 
     printable_board[7 - move.from / 8][move.from % 8] = ' ';
     printable_board[7 - move.to / 8][move.to % 8] = move.piece;

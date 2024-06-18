@@ -24,7 +24,7 @@ namespace BitBoard
 {
     struct Board
     {
-        Board() : white_to_move(true), white_pawns(WHITE_PAWNS_START), white_rooks(WHITE_ROOKS_START), white_knights(WHITE_KNIGHTS_START), white_bishops(WHITE_BISHOPS_START), white_queens(WHITE_QUEENS_START), white_king(WHITE_KING_START), black_pawns(BLACK_PAWNS_START), black_rooks(BLACK_ROOKS_START), black_knights(BLACK_KNIGHTS_START), black_bishops(BLACK_BISHOPS_START), black_queens(BLACK_QUEENS_START), black_king(BLACK_KING_START), occupied(WHITE_PIECES | BLACK_PIECES), occupied_by_white(WHITE_PIECES), occupied_by_black(BLACK_PIECES), squares_under_attack(0) {}
+        Board() : white_to_move(true), white_pawns(WHITE_PAWNS_START), white_rooks(WHITE_ROOKS_START), white_knights(WHITE_KNIGHTS_START), white_bishops(WHITE_BISHOPS_START), white_queens(WHITE_QUEENS_START), white_king(WHITE_KING_START), black_pawns(BLACK_PAWNS_START), black_rooks(BLACK_ROOKS_START), black_knights(BLACK_KNIGHTS_START), black_bishops(BLACK_BISHOPS_START), black_queens(BLACK_QUEENS_START), black_king(BLACK_KING_START), occupied(WHITE_PIECES | BLACK_PIECES), white_pieces(WHITE_PIECES), black_pieces(BLACK_PIECES), squares_under_attack(0) {}
         bool white_to_move;
         Bitboard white_pawns;
         Bitboard white_rooks;
@@ -41,14 +41,15 @@ namespace BitBoard
         Bitboard black_king;
 
         Bitboard occupied;
-        Bitboard occupied_by_white;
-        Bitboard occupied_by_black;
+        Bitboard white_pieces;
+        Bitboard black_pieces;
         Bitboard squares_under_attack;
     };
 
-    void set(Bitboard &board, uint8 position);
-    void clear(Bitboard &board, uint8 position);
-    bool isSet(Bitboard board, uint8 position);
+    void movePiece(Bitboard &board, Position from, Position to);
+    void set(Bitboard &board, Position position);
+    void clear(Bitboard &board, Position position);
+    bool isSet(Bitboard board, Position position);
     std::vector<bool> getBits(Bitboard board);
     void printBitboard(Bitboard board);
     int8 countSetBits(Bitboard board);

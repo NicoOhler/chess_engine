@@ -1,16 +1,22 @@
 #include "BitBoard.h"
 
-void BitBoard::set(Bitboard &board, uint8 position)
+void BitBoard::movePiece(Bitboard &board, Position from, Position to)
+{
+    BitBoard::clear(board, from);
+    BitBoard::set(board, to);
+}
+
+void BitBoard::set(Bitboard &board, Position position)
 {
     board |= 1ULL << position;
 }
 
-void BitBoard::clear(Bitboard &board, uint8 position)
+void BitBoard::clear(Bitboard &board, Position position)
 {
     board &= ~(1ULL << position);
 }
 
-bool BitBoard::isSet(Bitboard board, uint8 position)
+bool BitBoard::isSet(Bitboard board, Position position)
 {
     return board & (1ULL << position);
 }

@@ -21,17 +21,17 @@ void MoveGenerator::initializePawnCaptureMasks()
         if (col != COL_A)
         {
             if (row != ROW_8)
-                set(white_pawn_attack_left[square], square + ONE_ROW_UP + ONE_COL_LEFT);
+                set(white_pawn_attack_left[square], square + ONE_ROW_UP_ONE_COL_LEFT);
             if (row != ROW_1)
-                set(black_pawn_attack_left[square], square + ONE_ROW_DOWN + ONE_COL_LEFT);
+                set(black_pawn_attack_left[square], square + ONE_ROW_DOWN_ONE_COL_LEFT);
         }
 
         if (col != COL_H)
         {
             if (row != ROW_8)
-                set(white_pawn_attack_right[square], square + ONE_ROW_UP + ONE_COL_RIGHT);
+                set(white_pawn_attack_right[square], square + ONE_ROW_UP_ONE_COL_RIGHT);
             if (row != ROW_1)
-                set(black_pawn_attack_right[square], square + ONE_ROW_DOWN + ONE_COL_RIGHT);
+                set(black_pawn_attack_right[square], square + ONE_ROW_DOWN_ONE_COL_RIGHT);
         }
     }
 }
@@ -185,58 +185,57 @@ void MoveGenerator::initializeRookBishopAttacks()
     {
         int8 rook_relevant_squares = ROOK_RELEVANT_SQUARES[square];
         int8 bishop_relevant_squares = BISHOP_RELEVANT_SQUARES[square];
-        int8 number_of_rook_attacks = 1 << rook_relevant_squares; // 2^rook_relevant_squares, number of occupancy variations for a square
-        int8 number_of_bishop_attacks = 1 << bishop_relevant_squares;
+        int number_of_rook_attacks = 1 << rook_relevant_squares; // 2^rook_relevant_squares, number of occupancy variations for a square
+        int number_of_bishop_attacks = 1 << bishop_relevant_squares;
         int8 rook_bits = NUM_SQUARES - rook_relevant_squares; // number of bits to shift to get magic index
         int8 bishop_bits = NUM_SQUARES - bishop_relevant_squares;
 
-        for (int8 i = 0; i < number_of_rook_attacks; i++)
+        for (int i = 0; i < number_of_rook_attacks; i++)
         {
             // ? is it possible to compute all occupancy variations for a square at once?
-            Bitboard occupancy = getOccupancyVariation(i, number_of_rook_attacks, rook_blockers[square]);
+            Bitboard occupancy = getOccupancyVariation(i, rook_relevant_squares, rook_blockers[square]);
             int magic_index = (occupancy * ROOK_MAGICS[square]) >> rook_bits;
             rook_attacks[square][magic_index] = precomputeSlidingRookAttacks(square, occupancy);
         }
 
-        for (int8 i = 0; i < number_of_bishop_attacks; i++)
+        for (int i = 0; i < number_of_bishop_attacks; i++)
         {
-            Bitboard occupancy = getOccupancyVariation(i, number_of_bishop_attacks, bishop_blockers[square]);
+            Bitboard occupancy = getOccupancyVariation(i, bishop_relevant_squares, bishop_blockers[square]);
             int magic_index = (occupancy * BISHOP_MAGICS[square]) >> bishop_bits;
             bishop_attacks[square][magic_index] = precomputeSlidingBishopAttacks(square, occupancy);
         }
     }
 }
 
-// todo clean up
-// todo check if i can remove i < NUM_SQUARES, since i%8 != 0 should be enough
 Bitboard MoveGenerator::precomputeSlidingRookAttacks(Position square, Bitboard occupied)
 {
     Bitboard attacks = 0;
     for (Position i = square + ONE_COL_RIGHT; (i % 8) != COL_A; i += ONE_COL_RIGHT)
     {
-        attacks |= (1ULL << i);
-        if (occupied & (1ULL << i))
+        BitBoard::set(attacks, i);
+        if (BitBoard::isSet(occupied, i))
             break;
     }
 
-    for (Position i = square + ONE_COL_LEFT; (i % 8) != COL_H; i += ONE_COL_LEFT)
+    // need 1 >= 0 since modulo of negative numbers are negative in C
+    for (Position i = square + ONE_COL_LEFT; i >= 0 && (i % 8) != COL_H; i += ONE_COL_LEFT)
     {
-        attacks |= (1ULL << i);
-        if (occupied & (1ULL << i))
+        BitBoard::set(attacks, i);
+        if (BitBoard::isSet(occupied, i))
             break;
     }
 
     for (Position i = square + ONE_ROW_UP; i < NUM_SQUARES; i += ONE_ROW_UP)
     {
-        attacks |= (1ULL << i);
-        if (occupied & (1ULL << i))
+        BitBoard::set(attacks, i);
+        if (BitBoard::isSet(occupied, i))
             break;
     }
 
     for (Position i = square + ONE_ROW_DOWN; i >= ROW_1; i += ONE_ROW_DOWN)
     {
-        attacks |= (1ULL << i);
-        if (occupied & (1ULL << i))
+        BitBoard::set(attacks, i);
+        if (BitBoard::isSet(occupied, i))
             break;
     }
 
@@ -302,7 +301,7 @@ std::vector<Move> MoveGenerator::generateKingMoves(Board &board)
     bool white_to_move = board.white_to_move;
     Piece piece = white_to_move ? WHITE_KING : BLACK_KING;
     Bitboard king = white_to_move ? board.white_king : board.black_king;
-    Bitboard own_pieces = white_to_move ? board.occupied_by_white : board.occupied_by_black;
+    Bitboard own_pieces = white_to_move ? board.white_pieces : board.black_pieces;
     Position square = clearRightmostSetBit(king);
     Bitboard attacks = king_moves[square] & ~own_pieces & ~board.squares_under_attack;
 
@@ -328,7 +327,7 @@ std::vector<Move> MoveGenerator::generatePawnMoves(Board &board)
     Bitboard *attack_right = white_to_move ? white_pawn_attack_right : black_pawn_attack_right;
     Bitboard *attack_left = white_to_move ? white_pawn_attack_left : black_pawn_attack_left;
     Bitboard start_row = white_to_move ? WHITE_PAWNS_START : BLACK_PAWNS_START;
-    Bitboard enemies = white_to_move ? board.occupied_by_black : board.occupied_by_white;
+    Bitboard enemies = white_to_move ? board.black_pieces : board.white_pieces;
     Direction direction = white_to_move ? ONE_ROW_UP : ONE_ROW_DOWN;
     Direction direction_right = white_to_move ? ONE_ROW_UP_ONE_COL_RIGHT : ONE_ROW_DOWN_ONE_COL_RIGHT;
     Direction direction_left = white_to_move ? ONE_ROW_UP_ONE_COL_LEFT : ONE_ROW_DOWN_ONE_COL_LEFT;
@@ -398,7 +397,7 @@ std::vector<Move> MoveGenerator::generateKnightMoves(Board &board)
     bool white_to_move = board.white_to_move;
     Piece piece = white_to_move ? WHITE_KNIGHT : BLACK_KNIGHT;
     Bitboard knights = white_to_move ? board.white_knights : board.black_knights;
-    Bitboard own_pieces = white_to_move ? board.occupied_by_white : board.occupied_by_black;
+    Bitboard own_pieces = white_to_move ? board.white_pieces : board.black_pieces;
 
     while (knights)
     {
@@ -422,7 +421,7 @@ std::vector<Move> MoveGenerator::generateBishopMoves(Board &board)
     bool white_to_move = board.white_to_move;
     Piece piece = white_to_move ? WHITE_BISHOP : BLACK_BISHOP;
     Bitboard bishops = white_to_move ? board.white_bishops : board.black_bishops;
-    Bitboard own_pieces = white_to_move ? board.occupied_by_white : board.occupied_by_black;
+    Bitboard own_pieces = white_to_move ? board.white_pieces : board.black_pieces;
 
     // for each bishop add each attacked square to moves
     while (bishops)
@@ -432,6 +431,7 @@ std::vector<Move> MoveGenerator::generateBishopMoves(Board &board)
         int magic_index = ((bishop_blockers[square] & board.occupied) * BISHOP_MAGICS[square]) >> (NUM_SQUARES - BISHOP_RELEVANT_SQUARES[square]);
         Bitboard attacks = bishop_attacks[square][magic_index] & ~own_pieces;
         board.squares_under_attack |= attacks;
+        // add each square attacked by current bishop to moves
         while (attacks)
         {
             Position to = clearRightmostSetBit(attacks);
@@ -449,7 +449,7 @@ std::vector<Move> MoveGenerator::generateRookMoves(Board &board)
     bool white_to_move = board.white_to_move;
     Piece piece = white_to_move ? WHITE_ROOK : BLACK_ROOK;
     Bitboard rooks = white_to_move ? board.white_rooks : board.black_rooks;
-    Bitboard own_pieces = white_to_move ? board.occupied_by_white : board.occupied_by_black;
+    Bitboard own_pieces = white_to_move ? board.white_pieces : board.black_pieces;
 
     // for each rook add each attacked square to moves
     while (rooks)
@@ -475,14 +475,14 @@ std::vector<Move> MoveGenerator::generateQueenMoves(Board &board)
     bool white_to_move = board.white_to_move;
     Piece piece = white_to_move ? WHITE_QUEEN : BLACK_QUEEN;
     Bitboard queens = white_to_move ? board.white_queens : board.black_queens;
-    Bitboard own_pieces = white_to_move ? board.occupied_by_white : board.occupied_by_black;
+    Bitboard own_pieces = white_to_move ? board.white_pieces : board.black_pieces;
 
     // for each queen add each attacked square to moves
     while (queens)
     {
         Position square = clearRightmostSetBit(queens);
-        int rook_magic_index = (rook_blockers[square] * ROOK_MAGICS[square]) >> (NUM_SQUARES - ROOK_RELEVANT_SQUARES[square]);
-        int bishop_magic_index = (bishop_blockers[square] * BISHOP_MAGICS[square]) >> (NUM_SQUARES - BISHOP_RELEVANT_SQUARES[square]);
+        int rook_magic_index = ((rook_blockers[square] & board.occupied) * ROOK_MAGICS[square]) >> (NUM_SQUARES - ROOK_RELEVANT_SQUARES[square]);
+        int bishop_magic_index = ((bishop_blockers[square] & board.occupied) * BISHOP_MAGICS[square]) >> (NUM_SQUARES - BISHOP_RELEVANT_SQUARES[square]);
         Bitboard attacks = rook_attacks[square][rook_magic_index] | bishop_attacks[square][bishop_magic_index];
         attacks &= ~own_pieces;
         board.squares_under_attack |= attacks;
