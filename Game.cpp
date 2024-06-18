@@ -72,44 +72,43 @@ Move Game::getLegalMoveFromUser(std::vector<Move> legal_moves)
     }
 }
 
-Bitboard Game::getBitboardByPiece(char piece)
+Bitboard *Game::getBitboardByPiece(char piece)
 {
     switch (piece)
     {
     case 'P':
-        return board.white_pawns;
+        return &board.white_pawns;
     case 'R':
-        return board.white_rooks;
+        return &board.white_rooks;
     case 'N':
-        return board.white_knights;
+        return &board.white_knights;
     case 'B':
-        return board.white_bishops;
+        return &board.white_bishops;
     case 'Q':
-        return board.white_queens;
+        return &board.white_queens;
     case 'K':
-        return board.white_king;
+        return &board.white_king;
     case 'p':
-        return board.black_pawns;
+        return &board.black_pawns;
     case 'r':
-        return board.black_rooks;
+        return &board.black_rooks;
     case 'n':
-        return board.black_knights;
+        return &board.black_knights;
     case 'b':
-        return board.black_bishops;
+        return &board.black_bishops;
     case 'q':
-        return board.black_queens;
+        return &board.black_queens;
     case 'k':
-        return board.black_king;
+        return &board.black_king;
     }
     exit(1);
 }
 
 void Game::applyMove(Move move)
 {
-    // ? getBitboardByPiece returns no reference?
-    Bitboard piece = getBitboardByPiece(move.piece);
-    BitBoard::clear(piece, 1ULL << move.from);
-    BitBoard::set(piece, 1ULL << move.to);
+    Bitboard *piece = getBitboardByPiece(move.piece);
+    BitBoard::clear(*piece, move.from);
+    BitBoard::set(*piece, move.to);
 
     printable_board[7 - move.from / 8][move.from % 8] = ' ';
     printable_board[7 - move.to / 8][move.to % 8] = move.piece;

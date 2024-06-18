@@ -33,5 +33,5 @@ private:
     void applyMove(Move move);
     void printBoard();
     bool isGameOver();
-    Bitboard getBitboardByPiece(char piece);
+    Bitboard *getBitboardByPiece(char piece);
 };

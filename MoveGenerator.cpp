@@ -18,7 +18,7 @@ void MoveGenerator::initializePawnCaptureMasks()
         Position row = square / 8;
         Position col = square % 8;
 
-        if (col != COL_A) // attack left
+        if (col != COL_A)
         {
             if (row != ROW_8)
                 set(white_pawn_attack_left[square], square + ONE_ROW_UP + ONE_COL_LEFT);
@@ -26,7 +26,7 @@ void MoveGenerator::initializePawnCaptureMasks()
                 set(black_pawn_attack_left[square], square + ONE_ROW_DOWN + ONE_COL_LEFT);
         }
 
-        if (col != COL_H) // attack right
+        if (col != COL_H)
         {
             if (row != ROW_8)
                 set(white_pawn_attack_right[square], square + ONE_ROW_UP + ONE_COL_RIGHT);
@@ -70,8 +70,6 @@ void MoveGenerator::initializeKnightMoves()
     }
 }
 
-// todo optimize + clean up
-// todo rename, since it generates squares which may block bishop/rook
 void MoveGenerator::initializeBishopBlockers()
 {
     log(MOVE_GENERATOR, "Initializing bishop blockers.\n");
@@ -80,17 +78,29 @@ void MoveGenerator::initializeBishopBlockers()
         Position row = square / 8;
         Position col = square % 8;
 
-        for (Position i = square + ONE_ROW_UP_ONE_COL_RIGHT; (i < NUM_SQUARES && (i % 8) != 7); i += ONE_ROW_UP_ONE_COL_RIGHT)
-            set(bishop_blockers[square], i);
+        if (row < ROW_8)
+        {
+            if (col < COL_H)
+                for (Position i = square + ONE_ROW_UP_ONE_COL_RIGHT; (i < NUM_SQUARES + ONE_ROW_DOWN && (i % 8) != COL_H); i += ONE_ROW_UP_ONE_COL_RIGHT)
+                    set(bishop_blockers[square], i);
 
-        for (Position i = square + ONE_ROW_UP_ONE_COL_LEFT; (i < NUM_SQUARES && (i % 8) != 0); i += ONE_ROW_UP_ONE_COL_LEFT)
-            set(bishop_blockers[square], i);
+            if (col > COL_A)
+                for (Position i = square + ONE_ROW_UP_ONE_COL_LEFT; (i < NUM_SQUARES + ONE_ROW_DOWN && (i % 8) != COL_A); i += ONE_ROW_UP_ONE_COL_LEFT)
+                    set(bishop_blockers[square], i);
+        }
 
-        for (Position i = square - ONE_ROW_DOWN_ONE_COL_RIGHT; (i >= 0 && (i % 8) != 7); i += ONE_ROW_DOWN_ONE_COL_RIGHT)
-            set(bishop_blockers[square], i);
+        if (row > ROW_1)
+        {
+            if (col < COL_H)
+                for (Position i = square + ONE_ROW_DOWN_ONE_COL_RIGHT; (i >= ONE_ROW_UP && (i % 8) != COL_H); i += ONE_ROW_DOWN_ONE_COL_RIGHT)
+                    set(bishop_blockers[square], i);
 
-        for (Position i = square - ONE_ROW_DOWN_ONE_COL_LEFT; (i >= 0 && (i % 8) != 0); i += ONE_ROW_DOWN_ONE_COL_LEFT)
-            set(bishop_blockers[square], i);
+            if (col > COL_A)
+                for (Position i = square + ONE_ROW_DOWN_ONE_COL_LEFT; (i >= ONE_ROW_UP && (i % 8) != COL_A); i += ONE_ROW_DOWN_ONE_COL_LEFT)
+                    set(bishop_blockers[square], i);
+        }
+
+        assert(countSetBits(bishop_blockers[square]) == BISHOP_RELEVANT_SQUARES[square], "Bishop blockers count does not match relevant squares.");
     }
 }
 
@@ -102,17 +112,21 @@ void MoveGenerator::initializeRookBlockers()
         Position row = square / 8;
         Position col = square % 8;
 
-        for (Position i = square + ONE_COL_RIGHT; (i < NUM_SQUARES && (i % 8) != 7); i += ONE_COL_RIGHT)
-            set(rook_blockers[square], i);
+        if (col < COL_H)
+            for (Position i = square + ONE_COL_RIGHT; (i % 8) != COL_H; i += ONE_COL_RIGHT)
+                set(rook_blockers[square], i);
 
-        for (Position i = square + ONE_COL_LEFT; (i >= 0 && (i % 8) != 0); i += ONE_COL_LEFT)
-            set(rook_blockers[square], i);
+        if (col > COL_A)
+            for (Position i = square + ONE_COL_LEFT; (i % 8) != COL_A; i += ONE_COL_LEFT)
+                set(rook_blockers[square], i);
 
         for (Position i = square + ONE_ROW_UP; i < NUM_SQUARES + ONE_ROW_DOWN; i += ONE_ROW_UP)
             set(rook_blockers[square], i);
 
         for (Position i = square + ONE_ROW_DOWN; i >= ONE_ROW_UP; i += ONE_ROW_DOWN)
             set(rook_blockers[square], i);
+
+        assert(countSetBits(rook_blockers[square]) == ROOK_RELEVANT_SQUARES[square], "Rook blockers count does not match relevant squares.");
     }
 }
 
@@ -169,14 +183,14 @@ void MoveGenerator::initializeRookBishopAttacks()
     log(MOVE_GENERATOR, "Initializing rook and bishop attacks.\n");
     for (Position square = 0; square < NUM_SQUARES; square++)
     {
-        uint8 rook_relevant_squares = ROOK_RELEVANT_SQUARES[square];
-        uint8 bishop_relevant_squares = BISHOP_RELEVANT_SQUARES[square];
-        int number_of_rook_attacks = 1 << rook_relevant_squares; // 2^rook_relevant_squares, number of occupancy variations for a square
-        int number_of_bishop_attacks = 1 << bishop_relevant_squares;
-        int rook_bits = NUM_SQUARES - rook_relevant_squares; // number of bits to shift to get magic index
-        int bishop_bits = NUM_SQUARES - bishop_relevant_squares;
+        int8 rook_relevant_squares = ROOK_RELEVANT_SQUARES[square];
+        int8 bishop_relevant_squares = BISHOP_RELEVANT_SQUARES[square];
+        int8 number_of_rook_attacks = 1 << rook_relevant_squares; // 2^rook_relevant_squares, number of occupancy variations for a square
+        int8 number_of_bishop_attacks = 1 << bishop_relevant_squares;
+        int8 rook_bits = NUM_SQUARES - rook_relevant_squares; // number of bits to shift to get magic index
+        int8 bishop_bits = NUM_SQUARES - bishop_relevant_squares;
 
-        for (int i = 0; i < number_of_rook_attacks; i++)
+        for (int8 i = 0; i < number_of_rook_attacks; i++)
         {
             // ? is it possible to compute all occupancy variations for a square at once?
             Bitboard occupancy = getOccupancyVariation(i, number_of_rook_attacks, rook_blockers[square]);
@@ -184,7 +198,7 @@ void MoveGenerator::initializeRookBishopAttacks()
             rook_attacks[square][magic_index] = precomputeSlidingRookAttacks(square, occupancy);
         }
 
-        for (int i = 0; i < number_of_bishop_attacks; i++)
+        for (int8 i = 0; i < number_of_bishop_attacks; i++)
         {
             Bitboard occupancy = getOccupancyVariation(i, number_of_bishop_attacks, bishop_blockers[square]);
             int magic_index = (occupancy * BISHOP_MAGICS[square]) >> bishop_bits;
@@ -198,24 +212,20 @@ void MoveGenerator::initializeRookBishopAttacks()
 Bitboard MoveGenerator::precomputeSlidingRookAttacks(Position square, Bitboard occupied)
 {
     Bitboard attacks = 0;
-
-    // right
-    for (Position i = square + ONE_COL_RIGHT; (i < NUM_SQUARES && (i % 8) != 0); i += ONE_COL_RIGHT)
+    for (Position i = square + ONE_COL_RIGHT; (i % 8) != COL_A; i += ONE_COL_RIGHT)
     {
         attacks |= (1ULL << i);
         if (occupied & (1ULL << i))
             break;
     }
 
-    // left
-    for (Position i = square + ONE_COL_LEFT; (i >= 0 && (i % 8) != 7); i += ONE_COL_LEFT)
+    for (Position i = square + ONE_COL_LEFT; (i % 8) != COL_H; i += ONE_COL_LEFT)
     {
         attacks |= (1ULL << i);
         if (occupied & (1ULL << i))
             break;
     }
 
-    // up
     for (Position i = square + ONE_ROW_UP; i < NUM_SQUARES; i += ONE_ROW_UP)
     {
         attacks |= (1ULL << i);
@@ -223,8 +233,7 @@ Bitboard MoveGenerator::precomputeSlidingRookAttacks(Position square, Bitboard o
             break;
     }
 
-    // down
-    for (Position i = square + ONE_ROW_DOWN; i >= 0; i += ONE_ROW_DOWN)
+    for (Position i = square + ONE_ROW_DOWN; i >= ROW_1; i += ONE_ROW_DOWN)
     {
         attacks |= (1ULL << i);
         if (occupied & (1ULL << i))
@@ -237,29 +246,28 @@ Bitboard MoveGenerator::precomputeSlidingRookAttacks(Position square, Bitboard o
 Bitboard MoveGenerator::precomputeSlidingBishopAttacks(Position square, Bitboard occupied)
 {
     Bitboard attacks = 0;
-
-    for (Position i = square + ONE_ROW_UP_ONE_COL_RIGHT; (i < NUM_SQUARES && (i % 8) != 0); i += ONE_ROW_UP_ONE_COL_RIGHT)
+    for (Position i = square + ONE_ROW_UP_ONE_COL_RIGHT; (i < NUM_SQUARES && (i % 8) != COL_A); i += ONE_ROW_UP_ONE_COL_RIGHT)
     {
         attacks |= (1ULL << i);
         if (occupied & (1ULL << i))
             break;
     }
 
-    for (Position i = square + ONE_ROW_UP_ONE_COL_LEFT; (i < NUM_SQUARES && (i % 8) != 7); i += ONE_ROW_UP_ONE_COL_LEFT)
+    for (Position i = square + ONE_ROW_UP_ONE_COL_LEFT; (i < NUM_SQUARES && (i % 8) != COL_H); i += ONE_ROW_UP_ONE_COL_LEFT)
     {
         attacks |= (1ULL << i);
         if (occupied & (1ULL << i))
             break;
     }
 
-    for (Position i = square + ONE_ROW_DOWN_ONE_COL_RIGHT; (i >= 0 && (i % 8) != 0); i += ONE_ROW_DOWN_ONE_COL_RIGHT)
+    for (Position i = square + ONE_ROW_DOWN_ONE_COL_RIGHT; (i >= ROW_1 && (i % 8) != COL_A); i += ONE_ROW_DOWN_ONE_COL_RIGHT)
     {
         attacks |= (1ULL << i);
         if (occupied & (1ULL << i))
             break;
     }
 
-    for (Position i = square - ONE_ROW_DOWN_ONE_COL_LEFT; (i >= 0 && (i % 8) != 7); i += ONE_ROW_DOWN_ONE_COL_LEFT)
+    for (Position i = square + ONE_ROW_DOWN_ONE_COL_LEFT; (i >= ROW_1 && (i % 8) != COL_H); i += ONE_ROW_DOWN_ONE_COL_LEFT)
     {
         attacks |= (1ULL << i);
         if (occupied & (1ULL << i))

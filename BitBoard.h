@@ -1,5 +1,7 @@
 #pragma once
 #include "definitions.h"
+#include <iostream>
+#include <vector>
 
 const Bitboard WHITE_PAWNS_START = 0x000000000000FF00;
 const Bitboard WHITE_KNIGHTS_START = 0x0000000000000042;
@@ -47,5 +49,8 @@ namespace BitBoard
     void set(Bitboard &board, uint8 position);
     void clear(Bitboard &board, uint8 position);
     bool isSet(Bitboard board, uint8 position);
+    std::vector<bool> getBits(Bitboard board);
+    void printBitboard(Bitboard board);
+    int8 countSetBits(Bitboard board);
     Position clearRightmostSetBit(Bitboard &board); // sets the rightmost set bit to 0 and returns its index
 }
