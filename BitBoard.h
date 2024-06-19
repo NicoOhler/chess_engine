@@ -20,6 +20,8 @@ const Bitboard BLACK_KING_START = 0x1000000000000000;
 const Bitboard WHITE_PIECES = 0x000000000000FFFF;
 const Bitboard BLACK_PIECES = 0xFFFF000000000000;
 
+const Position NO_EN_PASSANT = -100;
+
 namespace BitBoard
 {
     struct Board
@@ -44,6 +46,7 @@ namespace BitBoard
         Bitboard white_pieces;
         Bitboard black_pieces;
         Bitboard squares_under_attack;
+        Position en_passant;
     };
 
     void movePiece(Bitboard &board, Position from, Position to);

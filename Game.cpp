@@ -117,6 +117,21 @@ void Game::applyMove(Move move)
         BitBoard::clear(*opponent_pieces, move.to);
     }
 
+    // handle en passant
+    bool white_en_passant = move.piece == 'P' && move.to == board.en_passant + ONE_ROW_UP;
+    bool black_en_passant = move.piece == 'p' && move.to == board.en_passant + ONE_ROW_DOWN;
+    if (white_en_passant || black_en_passant) // remove captured pawn
+    {
+        BitBoard::clear(*getBitboardByPiece(move.piece == 'P' ? 'p' : 'P'), board.en_passant);
+        BitBoard::clear(*opponent_pieces, board.en_passant);
+        printable_board[7 - board.en_passant / 8][board.en_passant % 8] = ' ';
+    }
+
+    // detect double pawn push for en passant in next move
+    bool black_pawn_double_push = move.piece == 'p' && move.from / 8 == 6 && move.to / 8 == 4;
+    bool white_pawn_double_push = move.piece == 'P' && move.from / 8 == 1 && move.to / 8 == 3;
+    board.en_passant = (white_pawn_double_push || black_pawn_double_push) ? move.to : NO_EN_PASSANT;
+
     BitBoard::movePiece(*piece, move.from, move.to);
     BitBoard::movePiece(*own_pieces, move.from, move.to);
     BitBoard::movePiece(board.occupied, move.from, move.to);

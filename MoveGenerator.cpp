@@ -382,10 +382,23 @@ std::vector<Move> MoveGenerator::generatePawnMoves(Board &board)
             moves.push_back(Move{from, to_left, piece});
             log(PAWN_MOVE, "Found pawn move from " + getSquareName(from) + " to " + getSquareName(to_left) + ".\n");
         }
+
+        // right en passant
+        if (from % 8 != COL_H && board.en_passant == from + ONE_COL_RIGHT)
+        {
+            moves.push_back(Move{from, to_right, piece});
+            log(PAWN_MOVE, "Found en passant move from " + getSquareName(from) + " to " + getSquareName(to_right) + ".\n");
+        }
+
+        // left en passant
+        if (from % 8 != COL_A && board.en_passant == from + ONE_COL_LEFT)
+        {
+            moves.push_back(Move{from, to_left, piece});
+            log(PAWN_MOVE, "Found en passant move from " + getSquareName(from) + " to " + getSquareName(to_left) + ".\n");
+        }
     }
 
     // todo promotion
-    // todo en passant
 
     return moves;
 }

@@ -2,6 +2,7 @@
 
 #include "definitions.h"
 #include <string>
+#include <iostream>
 
 #define assert(condition, message)         \
     if (!(condition))                      \
