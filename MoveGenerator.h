@@ -14,6 +14,7 @@ struct Move
     Position to;
     Piece piece;
     Piece promotion;
+    Bitboard castling;
 
     bool operator==(const Move &rhs)
     {
@@ -46,7 +47,7 @@ private:
     void initializeKingMoves();
 
     void addPawnMove(std::vector<Move> &moves, Move move, Board &board);
-
+    void addCastlingMoves(std::vector<Move> &moves, Board &board);
     std::vector<Move> generateKingMoves(Board &board);
     std::vector<Move> generatePawnMoves(Board &board);
     std::vector<Move> generateKnightMoves(Board &board);

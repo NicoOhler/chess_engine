@@ -18,21 +18,15 @@ public:
 private:
     MoveGenerator moveGenerator;
     Board board;
-    // todo fill with FEN
-    char printable_board[8][8] = { // needs to be updated after each move
-        {'r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'},
-        {'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'},
-        {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '},
-        {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '},
-        {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '},
-        {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '},
-        {'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'},
-        {'R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'}};
+    // todo void initStartBoard(std::string fen = START_FEN);
+    char board_to_print[8][8];
 
     Move getLegalMoveFromUser(std::vector<Move> legal_moves);
     Piece getPromotionChoice();
     void applyMove(Move move);
-    void printBoard();
     bool isGameOver();
     Bitboard *getBitboardByPiece(char piece);
+    void printBoard();
+    void placePiecesOnBoard();
+    void placePieceTypeOnBoard(Bitboard piece_type, char piece);
 };

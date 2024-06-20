@@ -12,7 +12,7 @@ MoveGenerator::MoveGenerator()
 
 void MoveGenerator::initializePawnCaptureMasks()
 {
-    log(MOVE_GENERATOR, "Initializing pawn capture masks.\n");
+    log(MOVE_GENERATOR, "Initializing pawn capture masks.");
     for (Position square = 0; square < NUM_SQUARES; square++)
     {
         Position row = square / 8;
@@ -38,7 +38,7 @@ void MoveGenerator::initializePawnCaptureMasks()
 
 void MoveGenerator::initializeKnightMoves()
 {
-    log(MOVE_GENERATOR, "Initializing knight moves.\n");
+    log(MOVE_GENERATOR, "Initializing knight moves.");
     for (Position square = 0; square < NUM_SQUARES; square++)
     {
         Position row = square / 8;
@@ -72,7 +72,7 @@ void MoveGenerator::initializeKnightMoves()
 
 void MoveGenerator::initializeBishopBlockers()
 {
-    log(MOVE_GENERATOR, "Initializing bishop blockers.\n");
+    log(MOVE_GENERATOR, "Initializing bishop blockers.");
     for (Position square = 0; square < NUM_SQUARES; square++)
     {
         Position row = square / 8;
@@ -106,7 +106,7 @@ void MoveGenerator::initializeBishopBlockers()
 
 void MoveGenerator::initializeRookBlockers()
 {
-    log(MOVE_GENERATOR, "Initializing rook blockers.\n");
+    log(MOVE_GENERATOR, "Initializing rook blockers.");
     for (Position square = 0; square < NUM_SQUARES; square++)
     {
         Position row = square / 8;
@@ -132,7 +132,7 @@ void MoveGenerator::initializeRookBlockers()
 
 void MoveGenerator::initializeKingMoves()
 {
-    log(MOVE_GENERATOR, "Initializing king moves.\n");
+    log(MOVE_GENERATOR, "Initializing king moves.");
     for (Position square = 0; square < NUM_SQUARES; square++)
     {
         Position row = square / 8;
@@ -169,7 +169,7 @@ void MoveGenerator::addPawnMove(std::vector<Move> &moves, Move move, Board &boar
     if (move.to >= ONE_ROW_UP && move.to < NUM_SQUARES + ONE_ROW_DOWN)
     {
         moves.push_back(move);
-        log(PAWN_MOVE, "Found pawn move from " + getSquareName(move.from) + " to " + getSquareName(move.to) + ".\n");
+        log(PAWN_MOVE, "Found pawn move from " + getSquareName(move.from) + " to " + getSquareName(move.to) + ".");
         return;
     }
 
@@ -183,7 +183,36 @@ void MoveGenerator::addPawnMove(std::vector<Move> &moves, Move move, Board &boar
     moves.push_back(move);
     move.promotion = white_to_move ? WHITE_KNIGHT : BLACK_KNIGHT;
     moves.push_back(move);
-    log(PAWN_MOVE, "Found pawn promotion from " + getSquareName(move.from) + " to " + getSquareName(move.to) + ".\n");
+    log(PAWN_MOVE, "Found pawn promotion from " + getSquareName(move.from) + " to " + getSquareName(move.to) + ".");
+}
+
+void MoveGenerator::addCastlingMoves(std::vector<Move> &moves, Board &board)
+{
+    Piece piece = board.white_to_move ? WHITE_KING : BLACK_KING;
+    Position king_start = board.white_to_move ? WHITE_KING_START_POSITION : BLACK_KING_START_POSITION;
+    Bitboard king_side_castling = board.white_to_move ? WHITE_KING_SIDE_CASTLING : BLACK_KING_SIDE_CASTLING;
+    if (board.castling_rights & king_side_castling) // not possible if king or rook has moved
+    {
+        Bitboard king_side_blocked = board.occupied & king_side_castling;              // squares between king and rook must be empty
+        Bitboard king_side_attacked = board.squares_under_attack & king_side_castling; // squares in between must not be attacked
+        if (!king_side_blocked && !king_side_attacked)
+        {
+            moves.push_back(Move{king_start, king_start + ONE_COL_RIGHT * 2, piece, 0, king_side_castling});
+            log(KING_MOVE, "Found king side castling.");
+        }
+    }
+
+    Bitboard queen_side_castling = board.white_to_move ? WHITE_QUEEN_SIDE_CASTLING : BLACK_QUEEN_SIDE_CASTLING;
+    if (board.castling_rights & queen_side_castling)
+    {
+        Bitboard queen_side_blocked = board.occupied & queen_side_castling;
+        Bitboard queen_side_attacked = board.squares_under_attack & queen_side_castling;
+        if (!queen_side_blocked && !queen_side_attacked)
+        {
+            moves.push_back(Move{king_start, king_start + ONE_COL_LEFT * 2, piece, 0, queen_side_castling});
+            log(KING_MOVE, "Found queen side castling.");
+        }
+    }
 }
 
 Bitboard MoveGenerator::getOccupancyVariation(int index, int relevant_bits, Bitboard moves)
@@ -203,7 +232,7 @@ Bitboard MoveGenerator::getOccupancyVariation(int index, int relevant_bits, Bitb
 
 void MoveGenerator::initializeRookBishopAttacks()
 {
-    log(MOVE_GENERATOR, "Initializing rook and bishop attacks.\n");
+    log(MOVE_GENERATOR, "Initializing rook and bishop attacks.");
     for (Position square = 0; square < NUM_SQUARES; square++)
     {
         int8 rook_relevant_squares = ROOK_RELEVANT_SQUARES[square];
@@ -325,19 +354,20 @@ std::vector<Move> MoveGenerator::generateKingMoves(Board &board)
     Piece piece = white_to_move ? WHITE_KING : BLACK_KING;
     Bitboard king = white_to_move ? board.white_king : board.black_king;
     Bitboard own_pieces = white_to_move ? board.white_pieces : board.black_pieces;
-    Position square = clearRightmostSetBit(king);
-    Bitboard attacks = king_moves[square] & ~own_pieces & ~board.squares_under_attack;
+    Position from = clearRightmostSetBit(king);
+    Bitboard attacks = king_moves[from] & ~own_pieces & ~board.squares_under_attack;
 
-    board.squares_under_attack = attacks; // ? does king safety mechanism work?
     while (attacks)
     {
         Position to = clearRightmostSetBit(attacks);
-        moves.push_back(Move{square, to, piece});
-        log(KING_MOVE, "Found king move from " + getSquareName(square) + " to " + getSquareName(to) + ".\n");
+        moves.push_back(Move{from, to, piece});
+        log(KING_MOVE, "Found king move from " + getSquareName(from) + " to " + getSquareName(to) + ".");
     }
 
-    // todo castling
+    if (!(board.squares_under_attack & king)) // king must not be in check
+        addCastlingMoves(moves, board);
 
+    board.squares_under_attack = attacks; // ? does king safety mechanism work?
     return moves;
 }
 
@@ -376,7 +406,7 @@ std::vector<Move> MoveGenerator::generatePawnMoves(Board &board)
         Position to = clearRightmostSetBit(double_moves);
         Position from = to - 2 * direction;
         moves.push_back(Move{from, to, piece});
-        log(PAWN_MOVE, "Found pawn move from " + getSquareName(from) + " to " + getSquareName(to) + ".\n");
+        log(PAWN_MOVE, "Found pawn move from " + getSquareName(from) + " to " + getSquareName(to) + ".");
     }
 
     // for each pawn check attack masks
@@ -402,14 +432,14 @@ std::vector<Move> MoveGenerator::generatePawnMoves(Board &board)
         if (from % 8 != COL_H && board.en_passant == from + ONE_COL_RIGHT)
         {
             moves.push_back(Move{from, to_right, piece});
-            log(PAWN_MOVE, "Found en passant move from " + getSquareName(from) + " to " + getSquareName(to_right) + ".\n");
+            log(PAWN_MOVE, "Found en passant move from " + getSquareName(from) + " to " + getSquareName(to_right) + ".");
         }
 
         // left en passant
         if (from % 8 != COL_A && board.en_passant == from + ONE_COL_LEFT)
         {
             moves.push_back(Move{from, to_left, piece});
-            log(PAWN_MOVE, "Found en passant move from " + getSquareName(from) + " to " + getSquareName(to_left) + ".\n");
+            log(PAWN_MOVE, "Found en passant move from " + getSquareName(from) + " to " + getSquareName(to_left) + ".");
         }
     }
 
@@ -434,7 +464,7 @@ std::vector<Move> MoveGenerator::generateKnightMoves(Board &board)
         {
             Position to = clearRightmostSetBit(attacks);
             moves.push_back(Move{square, to, piece});
-            log(KNIGHT_MOVE, "Found knight move from " + getSquareName(square) + " to " + getSquareName(to) + ".\n");
+            log(KNIGHT_MOVE, "Found knight move from " + getSquareName(square) + " to " + getSquareName(to) + ".");
         }
     }
 
@@ -462,7 +492,7 @@ std::vector<Move> MoveGenerator::generateBishopMoves(Board &board)
         {
             Position to = clearRightmostSetBit(attacks);
             moves.push_back(Move{square, to, piece});
-            log(BISHOP_MOVE, "Found bishop move from " + getSquareName(square) + " to " + getSquareName(to) + ".\n");
+            log(BISHOP_MOVE, "Found bishop move from " + getSquareName(square) + " to " + getSquareName(to) + ".");
         }
     }
 
@@ -488,7 +518,7 @@ std::vector<Move> MoveGenerator::generateRookMoves(Board &board)
         {
             Position to = clearRightmostSetBit(attacks);
             moves.push_back(Move{square, to, piece});
-            log(ROOK_MOVE, "Found rook move from " + getSquareName(square) + " to " + getSquareName(to) + ".\n");
+            log(ROOK_MOVE, "Found rook move from " + getSquareName(square) + " to " + getSquareName(to) + ".");
         }
     }
 
@@ -516,7 +546,7 @@ std::vector<Move> MoveGenerator::generateQueenMoves(Board &board)
         {
             Position to = clearRightmostSetBit(attacks);
             moves.push_back(Move{square, to, piece});
-            log(QUEEN_MOVE, "Found queen move from " + getSquareName(square) + " to " + getSquareName(to) + ".\n");
+            log(QUEEN_MOVE, "Found queen move from " + getSquareName(square) + " to " + getSquareName(to) + ".");
         }
     }
 
