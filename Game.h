@@ -30,6 +30,7 @@ private:
         {'R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'}};
 
     Move getLegalMoveFromUser(std::vector<Move> legal_moves);
+    Piece getPromotionChoice();
     void applyMove(Move move);
     void printBoard();
     bool isGameOver();

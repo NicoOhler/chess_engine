@@ -163,6 +163,29 @@ void MoveGenerator::initializeKingMoves()
     }
 }
 
+void MoveGenerator::addPawnMove(std::vector<Move> &moves, Move move, Board &board)
+{
+    // regular move
+    if (move.to >= ONE_ROW_UP && move.to < NUM_SQUARES + ONE_ROW_DOWN)
+    {
+        moves.push_back(move);
+        log(PAWN_MOVE, "Found pawn move from " + getSquareName(move.from) + " to " + getSquareName(move.to) + ".\n");
+        return;
+    }
+
+    // pawn promotion
+    bool white_to_move = board.white_to_move;
+    move.promotion = white_to_move ? WHITE_QUEEN : BLACK_QUEEN;
+    moves.push_back(move);
+    move.promotion = white_to_move ? WHITE_ROOK : BLACK_ROOK;
+    moves.push_back(move);
+    move.promotion = white_to_move ? WHITE_BISHOP : BLACK_BISHOP;
+    moves.push_back(move);
+    move.promotion = white_to_move ? WHITE_KNIGHT : BLACK_KNIGHT;
+    moves.push_back(move);
+    log(PAWN_MOVE, "Found pawn promotion from " + getSquareName(move.from) + " to " + getSquareName(move.to) + ".\n");
+}
+
 Bitboard MoveGenerator::getOccupancyVariation(int index, int relevant_bits, Bitboard moves)
 {
     Bitboard occupancy = 0;
@@ -340,9 +363,7 @@ std::vector<Move> MoveGenerator::generatePawnMoves(Board &board)
     while (single_moves)
     {
         Position to = clearRightmostSetBit(single_moves);
-        Position from = to - direction;
-        moves.push_back(Move{from, to, piece});
-        log(PAWN_MOVE, "Found pawn move from " + getSquareName(from) + " to " + getSquareName(to) + ".\n");
+        addPawnMove(moves, Move{to - direction, to, piece}, board);
     }
     // double move
     Bitboard double_moves = pawns & start_row;
@@ -368,20 +389,14 @@ std::vector<Move> MoveGenerator::generatePawnMoves(Board &board)
         Bitboard attack = attack_right[from] & enemies;
         board.squares_under_attack |= attack;
         if (attack)
-        {
-            moves.push_back(Move{from, to_right, piece});
-            log(PAWN_MOVE, "Found pawn move from " + getSquareName(from) + " to " + getSquareName(to_right) + ".\n");
-        }
+            addPawnMove(moves, Move{from, to_right, piece}, board);
 
         // attack left
         Position to_left = from + direction_left;
         attack = attack_left[from] & enemies;
         board.squares_under_attack |= attack;
         if (attack)
-        {
-            moves.push_back(Move{from, to_left, piece});
-            log(PAWN_MOVE, "Found pawn move from " + getSquareName(from) + " to " + getSquareName(to_left) + ".\n");
-        }
+            addPawnMove(moves, Move{from, to_left, piece}, board);
 
         // right en passant
         if (from % 8 != COL_H && board.en_passant == from + ONE_COL_RIGHT)
@@ -397,8 +412,6 @@ std::vector<Move> MoveGenerator::generatePawnMoves(Board &board)
             log(PAWN_MOVE, "Found en passant move from " + getSquareName(from) + " to " + getSquareName(to_left) + ".\n");
         }
     }
-
-    // todo promotion
 
     return moves;
 }

@@ -72,6 +72,24 @@ Move Game::getLegalMoveFromUser(std::vector<Move> legal_moves)
     }
 }
 
+Piece Game::getPromotionChoice()
+{
+    std::cout << "Choose promotion piece: " << std::endl;
+    std::cout << "Q - Queen" << std::endl;
+    std::cout << "R - Rook" << std::endl;
+    std::cout << "B - Bishop" << std::endl;
+    std::cout << "N - Knight" << std::endl;
+
+    Piece choice;
+    while (true)
+    {
+        std::cin >> choice;
+        if (choice == 'Q' || choice == 'R' || choice == 'B' || choice == 'N' || choice == 'q' || choice == 'r' || choice == 'b' || choice == 'n')
+            return board.white_to_move ? toupper(choice) : tolower(choice);
+        std::cout << "Invalid choice. Please enter Q, R, B or N." << std::endl;
+    }
+}
+
 Bitboard *Game::getBitboardByPiece(char piece)
 {
     switch (piece)
@@ -117,27 +135,41 @@ void Game::applyMove(Move move)
         BitBoard::clear(*opponent_pieces, move.to);
     }
 
-    // handle en passant
-    bool white_en_passant = move.piece == 'P' && move.to == board.en_passant + ONE_ROW_UP;
-    bool black_en_passant = move.piece == 'p' && move.to == board.en_passant + ONE_ROW_DOWN;
-    if (white_en_passant || black_en_passant) // remove captured pawn
-    {
-        BitBoard::clear(*getBitboardByPiece(move.piece == 'P' ? 'p' : 'P'), board.en_passant);
-        BitBoard::clear(*opponent_pieces, board.en_passant);
-        printable_board[7 - board.en_passant / 8][board.en_passant % 8] = ' ';
-    }
+    bool white_to_move = board.white_to_move;
 
-    // detect double pawn push for en passant in next move
-    bool black_pawn_double_push = move.piece == 'p' && move.from / 8 == 6 && move.to / 8 == 4;
-    bool white_pawn_double_push = move.piece == 'P' && move.from / 8 == 1 && move.to / 8 == 3;
-    board.en_passant = (white_pawn_double_push || black_pawn_double_push) ? move.to : NO_EN_PASSANT;
+    if (white_to_move ? move.piece == 'P' : move.piece == 'p')
+    {
+        // handle en passant
+        if (move.to == board.en_passant + (white_to_move ? ONE_ROW_UP : ONE_ROW_DOWN)) // remove captured pawn
+        {
+            Bitboard *opponent_pawns = white_to_move ? &board.black_pawns : &board.white_pawns;
+            BitBoard::clear(*opponent_pawns, board.en_passant);
+            BitBoard::clear(*opponent_pieces, board.en_passant);
+            printable_board[7 - board.en_passant / 8][board.en_passant % 8] = ' ';
+        }
+
+        // detect double pawn push for en passant in next move
+        if (white_to_move && move.from / 8 == ROW_2 && move.to / 8 == ROW_4)
+            board.en_passant = move.to;
+        else if (!white_to_move && move.from / 8 == ROW_7 && move.to / 8 == ROW_5)
+            board.en_passant = move.to;
+        else
+            board.en_passant = NO_EN_PASSANT;
+    }
 
     BitBoard::movePiece(*piece, move.from, move.to);
     BitBoard::movePiece(*own_pieces, move.from, move.to);
     BitBoard::movePiece(board.occupied, move.from, move.to);
+    printable_board[ROW_8 - move.from / 8][move.from % 8] = ' ';
+    printable_board[ROW_8 - move.to / 8][move.to % 8] = move.piece;
 
-    printable_board[7 - move.from / 8][move.from % 8] = ' ';
-    printable_board[7 - move.to / 8][move.to % 8] = move.piece;
+    if (move.promotion)
+    {
+        Piece promotion = getPromotionChoice();
+        BitBoard::clear(*piece, move.to);
+        BitBoard::set(*getBitboardByPiece(promotion), move.to);
+        printable_board[ROW_8 - move.to / 8][move.to % 8] = promotion;
+    }
 }
 
 bool Game::isGameOver()

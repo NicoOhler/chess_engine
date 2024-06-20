@@ -13,6 +13,7 @@ struct Move
     Position from;
     Position to;
     Piece piece;
+    Piece promotion;
 
     bool operator==(const Move &rhs)
     {
@@ -43,6 +44,8 @@ private:
     void initializeBishopBlockers();
     void initializeRookBlockers();
     void initializeKingMoves();
+
+    void addPawnMove(std::vector<Move> &moves, Move move, Board &board);
 
     std::vector<Move> generateKingMoves(Board &board);
     std::vector<Move> generatePawnMoves(Board &board);
