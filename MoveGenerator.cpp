@@ -197,8 +197,9 @@ void MoveGenerator::addCastlingMoves(std::vector<Move> &moves, Board &board)
         Bitboard king_side_attacked = board.squares_under_attack & king_side_castling; // squares in between must not be attacked
         if (!king_side_blocked && !king_side_attacked)
         {
-            moves.push_back(Move{king_start, king_start + ONE_COL_RIGHT * 2, piece, 0, king_side_castling});
-            log(KING_MOVE, "Found king side castling.");
+            Position to = king_start + ONE_COL_RIGHT * 2;
+            moves.push_back(Move{king_start, to, piece, 0, king_side_castling});
+            log(KING_MOVE, "Found king side castling from " + getSquareName(king_start) + " to " + getSquareName(to) + ".");
         }
     }
 
@@ -209,8 +210,9 @@ void MoveGenerator::addCastlingMoves(std::vector<Move> &moves, Board &board)
         Bitboard queen_side_attacked = board.squares_under_attack & queen_side_castling;
         if (!queen_side_blocked && !queen_side_attacked)
         {
-            moves.push_back(Move{king_start, king_start + ONE_COL_LEFT * 2, piece, 0, queen_side_castling});
-            log(KING_MOVE, "Found queen side castling.");
+            Position to = king_start + ONE_COL_LEFT * 2;
+            moves.push_back(Move{king_start, to, piece, 0, queen_side_castling});
+            log(KING_MOVE, "Found queen side castling from " + getSquareName(king_start) + " to " + getSquareName(to) + ".");
         }
     }
 }

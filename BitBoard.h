@@ -1,5 +1,6 @@
 #pragma once
 #include "definitions.h"
+#include "utils.h"
 #include <iostream>
 #include <vector>
 
@@ -25,11 +26,17 @@ const Position NO_EN_PASSANT = -100;
 const Bitboard WHITE_KING_SIDE_CASTLING = 0x0000000000000060;
 const Bitboard WHITE_QUEEN_SIDE_CASTLING = 0x000000000000000E;
 const Bitboard BLACK_KING_SIDE_CASTLING = 0x6000000000000000;
-const Bitboard BLACK_QUEEN_SIDE_CASTLING = 0xE000000000000000;
+const Bitboard BLACK_QUEEN_SIDE_CASTLING = 0x0E00000000000000;
 const Bitboard WHITE_CASTLING = WHITE_KING_SIDE_CASTLING | WHITE_QUEEN_SIDE_CASTLING;
 const Bitboard BLACK_CASTLING = BLACK_KING_SIDE_CASTLING | BLACK_QUEEN_SIDE_CASTLING;
+
+// castling positions
 const Position WHITE_KING_START_POSITION = 4;
 const Position BLACK_KING_START_POSITION = 60;
+const Position WHITE_KING_SIDE_ROOK_START_POSITION = 7;
+const Position WHITE_QUEEN_SIDE_ROOK_START_POSITION = 0;
+const Position BLACK_KING_SIDE_ROOK_START_POSITION = 63;
+const Position BLACK_QUEEN_SIDE_ROOK_START_POSITION = 56;
 
 namespace BitBoard
 {

@@ -28,6 +28,7 @@ std::vector<bool> BitBoard::getBits(Bitboard board)
         bits[i] = board & (1ULL << i);
     return bits;
 }
+
 void BitBoard::printBitboard(Bitboard board)
 {
     std::vector<bool> bits = getBits(board);

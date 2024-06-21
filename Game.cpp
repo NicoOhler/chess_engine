@@ -17,7 +17,7 @@ void Game::loop()
 
 void Game::printBoard()
 {
-    std::cout << (board.white_to_move ? "White" : "Black") << "'s turn" << std::endl
+    std::cout << (white_to_move ? "White" : "Black") << "'s turn" << std::endl
               << std::endl;
     std::cout << "  a b c d e f g h" << std::endl;
     for (char i = 0; i < 8; i++)
@@ -60,6 +60,39 @@ void Game::placePiecesOnBoard()
     placePieceTypeOnBoard(board.black_king, BLACK_KING);
 }
 
+Bitboard *Game::getBitboardByPiece(char piece)
+{
+    switch (piece)
+    {
+    case WHITE_PAWN:
+        return &board.white_pawns;
+    case WHITE_ROOK:
+        return &board.white_rooks;
+    case WHITE_KNIGHT:
+        return &board.white_knights;
+    case WHITE_BISHOP:
+        return &board.white_bishops;
+    case WHITE_QUEEN:
+        return &board.white_queens;
+    case WHITE_KING:
+        return &board.white_king;
+    case BLACK_PAWN:
+        return &board.black_pawns;
+    case BLACK_ROOK:
+        return &board.black_rooks;
+    case BLACK_KNIGHT:
+        return &board.black_knights;
+    case BLACK_BISHOP:
+        return &board.black_bishops;
+    case BLACK_QUEEN:
+        return &board.black_queens;
+    case BLACK_KING:
+        return &board.black_king;
+    default:
+        assert(false, "Invalid piece");
+    }
+}
+
 Move Game::getLegalMoveFromUser(std::vector<Move> legal_moves)
 {
     std::string input;
@@ -82,6 +115,35 @@ Move Game::getLegalMoveFromUser(std::vector<Move> legal_moves)
     }
 }
 
+void Game::applyMove(Move move)
+{
+    char captured_piece = board_to_print[7 - move.to / 8][move.to % 8];
+    if (captured_piece != EMPTY)
+    {
+        Bitboard *opponent_pieces = white_to_move ? &board.black_pieces : &board.white_pieces;
+        BitBoard::clear(*getBitboardByPiece(captured_piece), move.to);
+        BitBoard::clear(*opponent_pieces, move.to);
+    }
+    else if (white_to_move ? move.piece == WHITE_PAWN : move.piece == BLACK_PAWN)
+    {
+        applyEnPassantCapture(move);
+        detectDoublePawnPushForEnPassant(move);
+    }
+
+    // move piece <=> update moved piece, own pieces and occupied squares
+    BitBoard::movePiece(*getBitboardByPiece(move.piece), move.from, move.to);
+    BitBoard::movePiece(*(white_to_move ? &board.white_pieces : &board.black_pieces), move.from, move.to);
+    BitBoard::movePiece(board.occupied, move.from, move.to);
+
+    applyPromotion(move);
+    applyCastling(move);
+
+    // update castling rights if king or rook moved
+    updateCastlingRights(move);
+
+    white_to_move = black_to_move;
+}
+
 Piece Game::getPromotionChoice()
 {
     std::cout << "Choose promotion piece: " << std::endl;
@@ -95,99 +157,86 @@ Piece Game::getPromotionChoice()
     {
         std::cin >> choice;
         if (choice == 'Q' || choice == 'R' || choice == 'B' || choice == 'N' || choice == 'q' || choice == 'r' || choice == 'b' || choice == 'n')
-            return board.white_to_move ? toupper(choice) : tolower(choice);
+            return white_to_move ? toupper(choice) : tolower(choice);
         std::cout << "Invalid choice. Please enter Q, R, B or N." << std::endl;
     }
 }
 
-Bitboard *Game::getBitboardByPiece(char piece)
+void Game::applyPromotion(Move &move)
 {
-    switch (piece)
-    {
-    case 'P':
-        return &board.white_pawns;
-    case 'R':
-        return &board.white_rooks;
-    case 'N':
-        return &board.white_knights;
-    case 'B':
-        return &board.white_bishops;
-    case 'Q':
-        return &board.white_queens;
-    case 'K':
-        return &board.white_king;
-    case 'p':
-        return &board.black_pawns;
-    case 'r':
-        return &board.black_rooks;
-    case 'n':
-        return &board.black_knights;
-    case 'b':
-        return &board.black_bishops;
-    case 'q':
-        return &board.black_queens;
-    case 'k':
-        return &board.black_king;
-    }
-    exit(1);
-}
-
-void Game::applyMove(Move move)
-{
-    bool white_to_move = board.white_to_move;
-    char captured_piece = board_to_print[7 - move.to / 8][move.to % 8];
-    Bitboard *opponent_pieces = white_to_move ? &board.black_pieces : &board.white_pieces;
-    if (captured_piece != ' ') // remove any captured piece
-    {
-        BitBoard::clear(*getBitboardByPiece(captured_piece), move.to);
-        BitBoard::clear(*opponent_pieces, move.to);
-    }
-
-    if (white_to_move ? move.piece == 'P' : move.piece == 'p')
-    {
-        // handle en passant
-        if (move.to == board.en_passant + (white_to_move ? ONE_ROW_UP : ONE_ROW_DOWN)) // remove captured pawn
-        {
-            Bitboard *opponent_pawns = white_to_move ? &board.black_pawns : &board.white_pawns;
-            BitBoard::clear(*opponent_pawns, board.en_passant);
-            BitBoard::clear(*opponent_pieces, board.en_passant);
-        }
-
-        // detect double pawn push for en passant in next move
-        if (white_to_move && move.from / 8 == ROW_2 && move.to / 8 == ROW_4)
-            board.en_passant = move.to;
-        else if (!white_to_move && move.from / 8 == ROW_7 && move.to / 8 == ROW_5)
-            board.en_passant = move.to;
-        else
-            board.en_passant = NO_EN_PASSANT;
-    }
-
-    Bitboard *own_pieces = white_to_move ? &board.white_pieces : &board.black_pieces;
-    Bitboard *piece = getBitboardByPiece(move.piece);
-    BitBoard::movePiece(*piece, move.from, move.to);
-    BitBoard::movePiece(*own_pieces, move.from, move.to);
-    BitBoard::movePiece(board.occupied, move.from, move.to);
-
     if (move.promotion)
     {
         Piece promotion = getPromotionChoice();
-        BitBoard::clear(*piece, move.to);
+        BitBoard::clear(*getBitboardByPiece(move.piece), move.to);
         BitBoard::set(*getBitboardByPiece(promotion), move.to);
     }
+}
 
+void Game::applyCastling(Move &move)
+{
     Bitboard king_side = white_to_move ? WHITE_KING_SIDE_CASTLING : BLACK_KING_SIDE_CASTLING;
     Bitboard queen_side = white_to_move ? WHITE_QUEEN_SIDE_CASTLING : BLACK_QUEEN_SIDE_CASTLING;
+    Bitboard *rook = white_to_move ? &board.white_rooks : &board.black_rooks;
+
     if (move.castling & queen_side)
     {
-        // clear castling rights
-        board.castling_rights &= ~queen_side & ~king_side;
-
-        // move rook, king is already moved
-        Bitboard *rook = white_to_move ? &board.white_rooks : &board.black_rooks;
-        BitBoard::movePiece(*rook, move.from - 4, move.from - 1);
+        board.castling_rights &= ~queen_side & ~king_side; // clear castling rights
+        Position rook_from = move.from + 4 * ONE_COL_RIGHT;
+        Position rook_to = move.from + ONE_COL_RIGHT;
+        BitBoard::movePiece(*rook, rook_from, rook_to);
+        return;
     }
 
-    board.white_to_move = !board.white_to_move;
+    if (move.castling & king_side)
+    {
+        board.castling_rights &= ~queen_side & ~king_side; // clear castling rights
+        Position rook_from = move.from + 3 * ONE_COL_LEFT;
+        Position rook_to = move.from + ONE_COL_LEFT;
+        BitBoard::movePiece(*rook, rook_from, rook_to);
+    }
+}
+
+void Game::updateCastlingRights(Move &move)
+{
+    Piece king = white_to_move ? WHITE_KING : BLACK_KING;
+    Piece rook = white_to_move ? WHITE_ROOK : BLACK_ROOK;
+    Bitboard castling_rights = white_to_move ? WHITE_CASTLING : BLACK_CASTLING;
+
+    if (move.piece == king)
+        board.castling_rights &= ~castling_rights;
+    else if (move.piece == rook)
+    {
+        Position king_side_rook_start_position = white_to_move ? WHITE_KING_SIDE_ROOK_START_POSITION : BLACK_KING_SIDE_ROOK_START_POSITION;
+        Position queen_side_rook_start_position = white_to_move ? WHITE_QUEEN_SIDE_ROOK_START_POSITION : BLACK_QUEEN_SIDE_ROOK_START_POSITION;
+        if (move.from == king_side_rook_start_position)
+            board.castling_rights &= ~WHITE_KING_SIDE_CASTLING;
+        else if (move.from == queen_side_rook_start_position)
+            board.castling_rights &= ~WHITE_QUEEN_SIDE_CASTLING;
+    }
+}
+
+void Game::applyEnPassantCapture(Move &move)
+{
+    if (move.to == board.en_passant + (white_to_move ? ONE_ROW_UP : ONE_ROW_DOWN))
+    {
+        // remove captured pawn
+        Bitboard *opponent_pieces = white_to_move ? &board.black_pieces : &board.white_pieces;
+        Bitboard *opponent_pawns = white_to_move ? &board.black_pawns : &board.white_pawns;
+        BitBoard::clear(*opponent_pawns, board.en_passant);
+        BitBoard::clear(*opponent_pieces, board.en_passant);
+    }
+}
+
+void Game::detectDoublePawnPushForEnPassant(Move &move)
+{
+    Position from_row = move.from / 8;
+    Position to_row = move.to / 8;
+    if (white_to_move && from_row == ROW_2 && to_row == ROW_4)
+        board.en_passant = move.to;
+    else if (black_to_move && from_row == ROW_7 && to_row == ROW_5)
+        board.en_passant = move.to;
+    else
+        board.en_passant = NO_EN_PASSANT;
 }
 
 bool Game::isGameOver()
