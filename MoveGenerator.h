@@ -54,7 +54,6 @@ private:
     std::vector<Move> generateBishopMoves(Board &board);
     std::vector<Move> generateRookMoves(Board &board);
     std::vector<Move> generateQueenMoves(Board &board);
-    // ? void generateCastlingMoves(Board &board, Move moves[]);
 
     // precomputed attacks for sliding pieces (bishop and rook) using magic bitboards
     void initializeRookBishopAttacks();                                           // precomputes squares under attack for every position for every relevant occupancy
@@ -65,4 +64,5 @@ private:
 public:
     MoveGenerator();
     std::vector<Move> generateMoves(Board &board);
+    bool areSquaresUnderAttack(Board &board, Bitboard squares);
 };

@@ -8,7 +8,6 @@ using namespace BitBoard;
 using namespace std;
 
 #define white_to_move board.white_to_move
-#define black_to_move !white_to_move
 
 class Game
 {
@@ -19,22 +18,22 @@ public:
     void loop();
 
 private:
+    Board board;
     MoveGenerator moveGenerator;
-    Board board; // game state
     char board_to_print[8][8];
     // todo void initStartBoard(std::string fen = START_FEN);
 
     Move getLegalMoveFromUser(std::vector<Move> legal_moves);
-    bool isGameOver();
-    Bitboard *getBitboardByPiece(char piece);
-
-    void applyMove(Move move);
     Piece getPromotionChoice();
-    void applyPromotion(Move &move);
-    void applyCastling(Move &move);
-    void updateCastlingRights(Move &move);
-    void applyEnPassantCapture(Move &move);
-    void detectDoublePawnPushForEnPassant(Move &move);
+
+    bool isGameOver();
+    void applyMove(Board &board, Move move);
+    void applyPromotion(Board &board, Move &move);
+    void applyCastling(Board &board, Move &move);
+    void updateCastlingRights(Board &board, Move &move);
+    void applyEnPassantCapture(Board &board, Move &move);
+    void detectDoublePawnPushForEnPassant(Board &board, Move &move);
+    std::vector<Move> removeIllegalMoves(std::vector<Move> moves, Board board);
 
     // todo move to separate class
     void printBoard();

@@ -47,8 +47,8 @@ namespace BitBoard
                   white_bishops(WHITE_BISHOPS_START), white_queens(WHITE_QUEENS_START), white_king(WHITE_KING_START),
                   black_pawns(BLACK_PAWNS_START), black_rooks(BLACK_ROOKS_START), black_knights(BLACK_KNIGHTS_START),
                   black_bishops(BLACK_BISHOPS_START), black_queens(BLACK_QUEENS_START), black_king(BLACK_KING_START),
-                  castling_rights(WHITE_CASTLING | BLACK_CASTLING), occupied(WHITE_PIECES | BLACK_PIECES),
-                  white_pieces(WHITE_PIECES), black_pieces(BLACK_PIECES), squares_under_attack(0) {}
+                  white_pieces(WHITE_PIECES), black_pieces(BLACK_PIECES), en_passant(NO_EN_PASSANT),
+                  castling_rights(WHITE_CASTLING | BLACK_CASTLING), occupied(WHITE_PIECES | BLACK_PIECES) {}
         bool white_to_move;
         Bitboard white_pawns;
         Bitboard white_rooks;
@@ -67,9 +67,10 @@ namespace BitBoard
         Bitboard occupied;
         Bitboard white_pieces;
         Bitboard black_pieces;
-        Bitboard squares_under_attack;
         Position en_passant;
         Bitboard castling_rights;
+
+        Bitboard *getBitboardByPiece(char piece);
     };
 
     void movePiece(Bitboard &board, Position from, Position to);

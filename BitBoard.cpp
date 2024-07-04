@@ -56,3 +56,36 @@ Position BitBoard::clearRightmostSetBit(Bitboard &board)
     board &= board - 1;
     return index_of_LSB;
 }
+
+Bitboard *BitBoard::Board::getBitboardByPiece(char piece)
+{
+    switch (piece)
+    {
+    case WHITE_PAWN:
+        return &white_pawns;
+    case WHITE_ROOK:
+        return &white_rooks;
+    case WHITE_KNIGHT:
+        return &white_knights;
+    case WHITE_BISHOP:
+        return &white_bishops;
+    case WHITE_QUEEN:
+        return &white_queens;
+    case WHITE_KING:
+        return &white_king;
+    case BLACK_PAWN:
+        return &black_pawns;
+    case BLACK_ROOK:
+        return &black_rooks;
+    case BLACK_KNIGHT:
+        return &black_knights;
+    case BLACK_BISHOP:
+        return &black_bishops;
+    case BLACK_QUEEN:
+        return &black_queens;
+    case BLACK_KING:
+        return &black_king;
+    default:
+        assert(false, "Invalid piece");
+    }
+}
