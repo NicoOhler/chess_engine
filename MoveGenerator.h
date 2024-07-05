@@ -64,5 +64,5 @@ private:
 public:
     MoveGenerator();
     std::vector<Move> generateMoves(Board &board);
-    bool areSquaresUnderAttack(Board &board, Bitboard squares);
+    bool squaresThreatened(Board &board, Bitboard squares, bool opponent);
 };

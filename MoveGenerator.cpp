@@ -193,8 +193,8 @@ void MoveGenerator::addCastlingMoves(std::vector<Move> &moves, Board &board)
     Bitboard king_side_castling = board.white_to_move ? WHITE_KING_SIDE_CASTLING : BLACK_KING_SIDE_CASTLING;
     if (board.castling_rights & king_side_castling) // not possible if king or rook has moved
     {
-        Bitboard king_side_blocked = board.occupied & king_side_castling;           // squares between king and rook must be empty
-        bool king_side_attacked = areSquaresUnderAttack(board, king_side_castling); // squares in between must not be attacked
+        Bitboard king_side_blocked = board.occupied & king_side_castling;             // squares between king and rook must be empty
+        bool king_side_attacked = squaresThreatened(board, king_side_castling, true); // squares in between must not be attacked
         if (!king_side_blocked && !king_side_attacked)
         {
             Position to = king_start + ONE_COL_RIGHT * 2;
@@ -207,7 +207,7 @@ void MoveGenerator::addCastlingMoves(std::vector<Move> &moves, Board &board)
     if (board.castling_rights & queen_side_castling)
     {
         Bitboard queen_side_blocked = board.occupied & queen_side_castling;
-        bool queen_side_attacked = areSquaresUnderAttack(board, queen_side_castling);
+        bool queen_side_attacked = squaresThreatened(board, queen_side_castling, true);
         if (!queen_side_blocked && !queen_side_attacked)
         {
             Position to = king_start + ONE_COL_LEFT * 2;
@@ -362,13 +362,13 @@ std::vector<Move> MoveGenerator::generateKingMoves(Board &board)
     while (attacks)
     {
         Position to = clearRightmostSetBit(attacks);
-        if (areSquaresUnderAttack(board, 1ULL << to))
+        if (squaresThreatened(board, 1ULL << to, true))
             continue;
         moves.push_back(Move{from, to, piece});
         log(KING_MOVE, "Found king move from " + getSquareName(from) + " to " + getSquareName(to) + ".");
     }
 
-    if (!areSquaresUnderAttack(board, king))
+    if (!squaresThreatened(board, king, true))
         addCastlingMoves(moves, board);
 
     return moves;
@@ -551,9 +551,9 @@ std::vector<Move> MoveGenerator::generateQueenMoves(Board &board)
 }
 
 // todo remove duplicate code
-bool MoveGenerator::areSquaresUnderAttack(Board &board, Bitboard squares)
+bool MoveGenerator::squaresThreatened(Board &board, Bitboard squares, bool opponent)
 {
-    bool white_to_move = board.white_to_move;
+    bool white_to_move = opponent ? !board.white_to_move : board.white_to_move;
     Bitboard pawn = white_to_move ? board.white_pawns : board.black_pawns;
     Bitboard knight = white_to_move ? board.white_knights : board.black_knights;
     Bitboard rook = white_to_move ? board.white_rooks : board.black_rooks;

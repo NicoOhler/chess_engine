@@ -1,24 +1,33 @@
 #include "Game.h"
 
+Game::Game(std::string FEN)
+{
+    log(CHESS_BOARD, "Initialized board with FEN: " + FEN);
+    board = generateBoardFromFEN(FEN);
+}
+
 void Game::loop()
 {
+    printBoard();
+    std::vector<Move> moves = moveGenerator.generateMoves(board);
+    moves = removeIllegalMoves(moves, board);
+
     do
     {
-        printBoard();
-        std::vector<Move> moves = moveGenerator.generateMoves(board);
-        moves = removeIllegalMoves(moves, board);
         Move move = getLegalMoveFromUser(moves);
         applyMove(board, move);
-    } while (!isGameOver());
+        printBoard();
+        moves = moveGenerator.generateMoves(board);
+        moves = removeIllegalMoves(moves, board);
+    } while (!isGameOver(board, moves.empty()));
 
-    printBoard();
     std::cout << "GAME OVER" << std::endl;
 }
 
 void Game::printBoard()
 {
     placePiecesOnBoard();
-    std::cout << (white_to_move ? "White" : "Black") << "'s turn" << std::endl
+    std::cout << (whites_turn ? "White" : "Black") << "'s turn" << std::endl
               << std::endl;
     std::cout << "  a b c d e f g h" << std::endl;
     for (char i = 0; i < 8; i++)
@@ -85,15 +94,16 @@ Move Game::getLegalMoveFromUser(std::vector<Move> legal_moves)
 
 void Game::applyMove(Board &board, Move move)
 {
+    // todo decouple from board_to_print
     char captured_piece_type = board_to_print[7 - move.to / 8][move.to % 8];
     if (captured_piece_type != EMPTY)
     {
-        Bitboard *opponent_pieces = white_to_move ? &board.black_pieces : &board.white_pieces;
+        Bitboard *opponent_pieces = whites_turn ? &board.black_pieces : &board.white_pieces;
         Bitboard *captured_piece = board.getBitboardByPiece(captured_piece_type);
         BitBoard::clear(*captured_piece, move.to);
         BitBoard::clear(*opponent_pieces, move.to);
     }
-    else if (white_to_move ? move.piece == WHITE_PAWN : move.piece == BLACK_PAWN)
+    else if (whites_turn ? move.piece == WHITE_PAWN : move.piece == BLACK_PAWN)
     {
         applyEnPassantCapture(board, move);
         detectDoublePawnPushForEnPassant(board, move);
@@ -102,13 +112,13 @@ void Game::applyMove(Board &board, Move move)
     // move piece <=> update moved piece, own pieces and occupied squares
     Bitboard *piece = board.getBitboardByPiece(move.piece);
     BitBoard::movePiece(*piece, move.from, move.to);
-    BitBoard::movePiece(*(white_to_move ? &board.white_pieces : &board.black_pieces), move.from, move.to);
+    BitBoard::movePiece(*(whites_turn ? &board.white_pieces : &board.black_pieces), move.from, move.to);
     BitBoard::movePiece(board.occupied, move.from, move.to);
 
     applyPromotion(board, move);
     applyCastling(board, move);
     updateCastlingRights(board, move);
-    white_to_move = !white_to_move;
+    whites_turn = !whites_turn;
 }
 
 Piece Game::getPromotionChoice()
@@ -124,7 +134,7 @@ Piece Game::getPromotionChoice()
     {
         std::cin >> choice;
         if (choice == 'Q' || choice == 'R' || choice == 'B' || choice == 'N' || choice == 'q' || choice == 'r' || choice == 'b' || choice == 'n')
-            return white_to_move ? toupper(choice) : tolower(choice);
+            return whites_turn ? toupper(choice) : tolower(choice);
         std::cout << "Invalid choice. Please enter Q, R, B or N." << std::endl;
     }
 }
@@ -141,9 +151,9 @@ void Game::applyPromotion(Board &board, Move &move)
 
 void Game::applyCastling(Board &board, Move &move)
 {
-    Bitboard king_side = white_to_move ? WHITE_KING_SIDE_CASTLING : BLACK_KING_SIDE_CASTLING;
-    Bitboard queen_side = white_to_move ? WHITE_QUEEN_SIDE_CASTLING : BLACK_QUEEN_SIDE_CASTLING;
-    Bitboard *rook = white_to_move ? &board.white_rooks : &board.black_rooks;
+    Bitboard king_side = whites_turn ? WHITE_KING_SIDE_CASTLING : BLACK_KING_SIDE_CASTLING;
+    Bitboard queen_side = whites_turn ? WHITE_QUEEN_SIDE_CASTLING : BLACK_QUEEN_SIDE_CASTLING;
+    Bitboard *rook = whites_turn ? &board.white_rooks : &board.black_rooks;
 
     if (move.castling & queen_side)
     {
@@ -165,16 +175,16 @@ void Game::applyCastling(Board &board, Move &move)
 
 void Game::updateCastlingRights(Board &board, Move &move)
 {
-    Piece king = white_to_move ? WHITE_KING : BLACK_KING;
-    Piece rook = white_to_move ? WHITE_ROOK : BLACK_ROOK;
-    Bitboard castling_rights = white_to_move ? WHITE_CASTLING : BLACK_CASTLING;
+    Piece king = whites_turn ? WHITE_KING : BLACK_KING;
+    Piece rook = whites_turn ? WHITE_ROOK : BLACK_ROOK;
+    Bitboard castling_rights = whites_turn ? WHITE_CASTLING : BLACK_CASTLING;
 
     if (move.piece == king)
         board.castling_rights &= ~castling_rights;
     else if (move.piece == rook)
     {
-        Position king_side_rook_start_position = white_to_move ? WHITE_KING_SIDE_ROOK_START_POSITION : BLACK_KING_SIDE_ROOK_START_POSITION;
-        Position queen_side_rook_start_position = white_to_move ? WHITE_QUEEN_SIDE_ROOK_START_POSITION : BLACK_QUEEN_SIDE_ROOK_START_POSITION;
+        Position king_side_rook_start_position = whites_turn ? WHITE_KING_SIDE_ROOK_START_POSITION : BLACK_KING_SIDE_ROOK_START_POSITION;
+        Position queen_side_rook_start_position = whites_turn ? WHITE_QUEEN_SIDE_ROOK_START_POSITION : BLACK_QUEEN_SIDE_ROOK_START_POSITION;
         if (move.from == king_side_rook_start_position)
             board.castling_rights &= ~WHITE_KING_SIDE_CASTLING;
         else if (move.from == queen_side_rook_start_position)
@@ -184,11 +194,11 @@ void Game::updateCastlingRights(Board &board, Move &move)
 
 void Game::applyEnPassantCapture(Board &board, Move &move)
 {
-    if (move.to == board.en_passant + (white_to_move ? ONE_ROW_UP : ONE_ROW_DOWN))
+    if (move.to == board.en_passant + (whites_turn ? ONE_ROW_UP : ONE_ROW_DOWN))
     {
         // remove captured pawn
-        Bitboard *opponent_pieces = white_to_move ? &board.black_pieces : &board.white_pieces;
-        Bitboard *opponent_pawns = white_to_move ? &board.black_pawns : &board.white_pawns;
+        Bitboard *opponent_pieces = whites_turn ? &board.black_pieces : &board.white_pieces;
+        Bitboard *opponent_pawns = whites_turn ? &board.black_pawns : &board.white_pawns;
         BitBoard::clear(*opponent_pawns, board.en_passant);
         BitBoard::clear(*opponent_pieces, board.en_passant);
     }
@@ -198,9 +208,9 @@ void Game::detectDoublePawnPushForEnPassant(Board &board, Move &move)
 {
     Position from_row = move.from / 8;
     Position to_row = move.to / 8;
-    if (white_to_move && from_row == ROW_2 && to_row == ROW_4)
+    if (whites_turn && from_row == ROW_2 && to_row == ROW_4)
         board.en_passant = move.to;
-    else if (!white_to_move && from_row == ROW_7 && to_row == ROW_5)
+    else if (!whites_turn && from_row == ROW_7 && to_row == ROW_5)
         board.en_passant = move.to;
     else
         board.en_passant = NO_EN_PASSANT;
@@ -210,12 +220,12 @@ std::vector<Move> Game::removeIllegalMoves(std::vector<Move> moves, Board board)
 {
     // simulate each move and check if king is in check
     std::vector<Move> legal_moves;
-    Bitboard king = white_to_move ? board.white_king : board.black_king;
+    Bitboard king = whites_turn ? board.white_king : board.black_king;
     for (Move move : moves)
     {
         Board board_copy = board;
         applyMove(board_copy, move);
-        if (moveGenerator.areSquaresUnderAttack(board_copy, king))
+        if (moveGenerator.squaresThreatened(board_copy, king, false))
             log(REMOVE_ILLEGAL_MOVES, "Removed illegal move from " + getSquareName(move.from) + " to " + getSquareName(move.to) + ".");
         else
             legal_moves.push_back(move);
@@ -223,15 +233,18 @@ std::vector<Move> Game::removeIllegalMoves(std::vector<Move> moves, Board board)
     return legal_moves;
 }
 
-bool Game::isGameOver()
+bool Game::isGameOver(Board &board, bool no_possible_moves)
 {
-    // todo
-    return false;
+    if (!no_possible_moves)
+        return false;
+    Bitboard king = whites_turn ? board.white_king : board.black_king;
+    bool king_in_check = moveGenerator.squaresThreatened(board, king, true);
+    std::cout << (king_in_check ? "Checkmate" : "Stalemate") << std::endl;
+    return true;
 }
-
 int main()
 {
-    Game game;
+    Game game = Game(START_FEN);
     game.loop();
     return 0;
 }

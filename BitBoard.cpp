@@ -57,6 +57,78 @@ Position BitBoard::clearRightmostSetBit(Bitboard &board)
     return index_of_LSB;
 }
 
+BitBoard::Board BitBoard::generateBoardFromFEN(std::string FEN)
+{
+    Board board = Board(EMPTY);
+
+    int i = 0;
+    // parse board position
+    for (int row = ROW_8; row >= ROW_1; row--)
+    {
+        for (int col = COL_A; col <= COL_H; col++)
+        {
+            Position square = 8 * row + col;
+            char c = FEN[i++];
+
+            if (c >= '1' && c <= '8')
+            {
+                col += c - '1';
+                continue;
+            }
+
+            Bitboard *piece = board.getBitboardByPiece(c);
+            BitBoard::set(*piece, square);
+            BitBoard::set(board.occupied, square);
+            BitBoard::set(isupper(c) ? board.white_pieces : board.black_pieces, square);
+        }
+        assert(FEN[i++] == (row != ROW_1 ? '/' : ' '), "Invalid FEN");
+    }
+
+    // parse side to move, castling rights, en passant square
+    board.white_to_move = FEN[i++] == 'w';
+    assert(FEN[i++] == ' ', "Invalid FEN");
+    if (FEN[i] == '-')
+    {
+        board.castling_rights = 0;
+        i++;
+    }
+    else
+        for (int j = 0; j < 4; j++)
+        {
+            if (FEN[i] == ' ')
+                break;
+            switch (FEN[i++])
+            {
+            case WHITE_KING:
+                board.castling_rights |= WHITE_KING_SIDE_CASTLING;
+                break;
+            case WHITE_QUEEN:
+                board.castling_rights |= WHITE_QUEEN_SIDE_CASTLING;
+                break;
+            case BLACK_KING:
+                board.castling_rights |= BLACK_KING_SIDE_CASTLING;
+                break;
+            case BLACK_QUEEN:
+                board.castling_rights |= BLACK_QUEEN_SIDE_CASTLING;
+                break;
+            default:
+                assert(false, "Invalid FEN");
+            }
+        }
+
+    assert(FEN[i++] == ' ', "Invalid FEN");
+    if (FEN[i] == '-')
+        board.en_passant = NO_EN_PASSANT;
+    else
+    {
+        std::string square = FEN.substr(i, 2);
+        board.en_passant = getSquareIndex(square);
+        i += 2;
+    }
+    // ignore halfmove clock and fullmove number for now
+    return board;
+}
+
 Bitboard *BitBoard::Board::getBitboardByPiece(char piece)
 {
     switch (piece)
@@ -88,4 +160,5 @@ Bitboard *BitBoard::Board::getBitboardByPiece(char piece)
     default:
         assert(false, "Invalid piece");
     }
+    return nullptr;
 }

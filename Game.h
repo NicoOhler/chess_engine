@@ -7,12 +7,12 @@
 using namespace BitBoard;
 using namespace std;
 
-#define white_to_move board.white_to_move
+#define whites_turn board.white_to_move
 
 class Game
 {
 public:
-    Game() = default;
+    Game(std::string FEN = START_FEN);
     ~Game() = default;
 
     void loop();
@@ -21,12 +21,11 @@ private:
     Board board;
     MoveGenerator moveGenerator;
     char board_to_print[8][8];
-    // todo void initStartBoard(std::string fen = START_FEN);
 
     Move getLegalMoveFromUser(std::vector<Move> legal_moves);
     Piece getPromotionChoice();
 
-    bool isGameOver();
+    bool isGameOver(Board &board, bool no_moves);
     void applyMove(Board &board, Move move);
     void applyPromotion(Board &board, Move &move);
     void applyCastling(Board &board, Move &move);

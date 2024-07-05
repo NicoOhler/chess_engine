@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 
 typedef unsigned long long uint64;
 typedef uint64 Bitboard;
@@ -12,7 +13,7 @@ typedef unsigned char Piece;
 const Position NUM_SQUARES = 64;
 const Position NUM_ROWS = 8;
 const Position NUM_COLS = 8;
-// const char *START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -";
+const std::string START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
 // commonly used directions
 const Position ONE_ROW_UP = 8;

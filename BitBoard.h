@@ -49,6 +49,13 @@ namespace BitBoard
                   black_bishops(BLACK_BISHOPS_START), black_queens(BLACK_QUEENS_START), black_king(BLACK_KING_START),
                   white_pieces(WHITE_PIECES), black_pieces(BLACK_PIECES), en_passant(NO_EN_PASSANT),
                   castling_rights(WHITE_CASTLING | BLACK_CASTLING), occupied(WHITE_PIECES | BLACK_PIECES) {}
+        Board(Piece empty) : white_to_move(true),
+                             white_pawns(0), white_rooks(0), white_knights(0),
+                             white_bishops(0), white_queens(0), white_king(0),
+                             black_pawns(0), black_rooks(0), black_knights(0),
+                             black_bishops(0), black_queens(0), black_king(0),
+                             white_pieces(0), black_pieces(0), en_passant(NO_EN_PASSANT),
+                             castling_rights(0), occupied(0) {}
         bool white_to_move;
         Bitboard white_pawns;
         Bitboard white_rooks;
@@ -81,4 +88,5 @@ namespace BitBoard
     void printBitboard(Bitboard board);
     int8 countSetBits(Bitboard board);
     Position clearRightmostSetBit(Bitboard &board); // sets the rightmost set bit to 0 and returns its index
+    Board generateBoardFromFEN(std::string FEN);
 }
