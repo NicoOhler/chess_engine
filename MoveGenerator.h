@@ -22,6 +22,27 @@ struct Move
     }
 };
 
+struct MoveList
+{
+    Move moves[MAX_MOVES];
+    int size = 0;
+
+    void append(Move move)
+    {
+        moves[size++] = move;
+    }
+
+    void clear()
+    {
+        size = 0;
+    }
+
+    bool empty()
+    {
+        return size == 0;
+    }
+};
+
 class MoveGenerator
 {
 private:
@@ -46,14 +67,14 @@ private:
     void initializeRookBlockers();
     void initializeKingMoves();
 
-    void addPawnMove(std::vector<Move> &moves, Move move, Board &board);
-    void addCastlingMoves(std::vector<Move> &moves, Board &board);
-    std::vector<Move> generateKingMoves(Board &board);
-    std::vector<Move> generatePawnMoves(Board &board);
-    std::vector<Move> generateKnightMoves(Board &board);
-    std::vector<Move> generateBishopMoves(Board &board);
-    std::vector<Move> generateRookMoves(Board &board);
-    std::vector<Move> generateQueenMoves(Board &board);
+    void addPawnMoveWithPossiblePromotion(Board &board, MoveList &moves, Move move);
+    void addCastlingMoves(Board &board, MoveList &moves);
+    void generateKingMoves(Board &board, MoveList &moves);
+    void generatePawnMoves(Board &board, MoveList &moves);
+    void generateKnightMoves(Board &board, MoveList &moves);
+    void generateBishopMoves(Board &board, MoveList &moves);
+    void generateRookMoves(Board &board, MoveList &moves);
+    void generateQueenMoves(Board &board, MoveList &moves);
 
     // precomputed attacks for sliding pieces (bishop and rook) using magic bitboards
     void initializeRookBishopAttacks();                                           // precomputes squares under attack for every position for every relevant occupancy
@@ -63,6 +84,6 @@ private:
 
 public:
     MoveGenerator();
-    std::vector<Move> generateMoves(Board &board);
+    MoveList generatePseudoLegalMoves(Board &board);
     bool squaresThreatened(Board &board, Bitboard squares, bool opponent);
 };

@@ -163,12 +163,12 @@ void MoveGenerator::initializeKingMoves()
     }
 }
 
-void MoveGenerator::addPawnMove(std::vector<Move> &moves, Move move, Board &board)
+void MoveGenerator::addPawnMoveWithPossiblePromotion(Board &board, MoveList &moves, Move move)
 {
     // regular move
     if (move.to >= ONE_ROW_UP && move.to < NUM_SQUARES + ONE_ROW_DOWN)
     {
-        moves.push_back(move);
+        moves.append(move);
         log(PAWN_MOVE, "Found pawn move from " + getSquareName(move.from) + " to " + getSquareName(move.to) + ".");
         return;
     }
@@ -176,17 +176,17 @@ void MoveGenerator::addPawnMove(std::vector<Move> &moves, Move move, Board &boar
     // pawn promotion
     bool white_to_move = board.white_to_move;
     move.promotion = white_to_move ? WHITE_QUEEN : BLACK_QUEEN;
-    moves.push_back(move);
+    moves.append(move);
     move.promotion = white_to_move ? WHITE_ROOK : BLACK_ROOK;
-    moves.push_back(move);
+    moves.append(move);
     move.promotion = white_to_move ? WHITE_BISHOP : BLACK_BISHOP;
-    moves.push_back(move);
+    moves.append(move);
     move.promotion = white_to_move ? WHITE_KNIGHT : BLACK_KNIGHT;
-    moves.push_back(move);
+    moves.append(move);
     log(PAWN_MOVE, "Found pawn promotion from " + getSquareName(move.from) + " to " + getSquareName(move.to) + ".");
 }
 
-void MoveGenerator::addCastlingMoves(std::vector<Move> &moves, Board &board)
+void MoveGenerator::addCastlingMoves(Board &board, MoveList &moves)
 {
     Piece piece = board.white_to_move ? WHITE_KING : BLACK_KING;
     Position king_start = board.white_to_move ? WHITE_KING_START_POSITION : BLACK_KING_START_POSITION;
@@ -198,7 +198,7 @@ void MoveGenerator::addCastlingMoves(std::vector<Move> &moves, Board &board)
         if (!king_side_blocked && !king_side_attacked)
         {
             Position to = king_start + ONE_COL_RIGHT * 2;
-            moves.push_back(Move{king_start, to, piece, 0, king_side_castling});
+            moves.append(Move{king_start, to, piece, 0, king_side_castling});
             log(KING_MOVE, "Found king side castling from " + getSquareName(king_start) + " to " + getSquareName(to) + ".");
         }
     }
@@ -211,7 +211,7 @@ void MoveGenerator::addCastlingMoves(std::vector<Move> &moves, Board &board)
         if (!queen_side_blocked && !queen_side_attacked)
         {
             Position to = king_start + ONE_COL_LEFT * 2;
-            moves.push_back(Move{king_start, to, piece, 0, queen_side_castling});
+            moves.append(Move{king_start, to, piece, 0, queen_side_castling});
             log(KING_MOVE, "Found queen side castling from " + getSquareName(king_start) + " to " + getSquareName(to) + ".");
         }
     }
@@ -330,28 +330,20 @@ Bitboard MoveGenerator::precomputeSlidingBishopAttacks(Position square, Bitboard
     return attacks;
 }
 
-std::vector<Move> MoveGenerator::generateMoves(Board &board)
+MoveList MoveGenerator::generatePseudoLegalMoves(Board &board)
 {
-    // todo vectors are slow
-    std::vector<Move> king_moves = generateKingMoves(board); // generate king moves first, since they depend on squares under attack
-    std::vector<Move> moves = generatePawnMoves(board);
-    std::vector<Move> knight_moves = generateKnightMoves(board);
-    std::vector<Move> bishop_moves = generateBishopMoves(board);
-    std::vector<Move> rook_moves = generateRookMoves(board);
-    std::vector<Move> queen_moves = generateQueenMoves(board);
-
-    moves.insert(moves.end(), knight_moves.begin(), knight_moves.end());
-    moves.insert(moves.end(), bishop_moves.begin(), bishop_moves.end());
-    moves.insert(moves.end(), rook_moves.begin(), rook_moves.end());
-    moves.insert(moves.end(), queen_moves.begin(), queen_moves.end());
-    moves.insert(moves.end(), king_moves.begin(), king_moves.end());
-
+    MoveList moves;
+    generateKingMoves(board, moves);
+    generatePawnMoves(board, moves);
+    generateKnightMoves(board, moves);
+    generateBishopMoves(board, moves);
+    generateRookMoves(board, moves);
+    generateQueenMoves(board, moves);
     return moves;
 }
 
-std::vector<Move> MoveGenerator::generateKingMoves(Board &board)
+void MoveGenerator::generateKingMoves(Board &board, MoveList &moves)
 {
-    std::vector<Move> moves;
     bool white_to_move = board.white_to_move;
     Piece piece = white_to_move ? WHITE_KING : BLACK_KING;
     Bitboard king = white_to_move ? board.white_king : board.black_king;
@@ -364,19 +356,16 @@ std::vector<Move> MoveGenerator::generateKingMoves(Board &board)
         Position to = clearRightmostSetBit(attacks);
         if (squaresThreatened(board, 1ULL << to, true))
             continue;
-        moves.push_back(Move{from, to, piece});
+        moves.append(Move{from, to, piece});
         log(KING_MOVE, "Found king move from " + getSquareName(from) + " to " + getSquareName(to) + ".");
     }
 
     if (!squaresThreatened(board, king, true))
-        addCastlingMoves(moves, board);
-
-    return moves;
+        addCastlingMoves(board, moves);
 }
 
-std::vector<Move> MoveGenerator::generatePawnMoves(Board &board)
+void MoveGenerator::generatePawnMoves(Board &board, MoveList &moves)
 {
-    std::vector<Move> moves;
     bool white_to_move = board.white_to_move;
     Piece piece = white_to_move ? WHITE_PAWN : BLACK_PAWN;
     Bitboard pawns = white_to_move ? board.white_pawns : board.black_pawns;
@@ -396,7 +385,7 @@ std::vector<Move> MoveGenerator::generatePawnMoves(Board &board)
     {
         Position to = clearRightmostSetBit(single_moves);
         Position from = to - direction;
-        addPawnMove(moves, Move{from, to, piece}, board);
+        addPawnMoveWithPossiblePromotion(board, moves, Move{from, to, piece});
     }
     // double move
     Bitboard double_moves = pawns & start_row;
@@ -408,7 +397,7 @@ std::vector<Move> MoveGenerator::generatePawnMoves(Board &board)
     {
         Position to = clearRightmostSetBit(double_moves);
         Position from = to - 2 * direction;
-        moves.push_back(Move{from, to, piece});
+        moves.append(Move{from, to, piece});
         log(PAWN_MOVE, "Found pawn move from " + getSquareName(from) + " to " + getSquareName(to) + ".");
     }
 
@@ -421,36 +410,33 @@ std::vector<Move> MoveGenerator::generatePawnMoves(Board &board)
         Position to_right = from + direction_right;
         Bitboard attack = attack_right[from] & enemies;
         if (attack)
-            addPawnMove(moves, Move{from, to_right, piece}, board);
+            addPawnMoveWithPossiblePromotion(board, moves, Move{from, to_right, piece});
 
         // attack left
         Position to_left = from + direction_left;
         attack = attack_left[from] & enemies;
         if (attack)
-            addPawnMove(moves, Move{from, to_left, piece}, board);
+            addPawnMoveWithPossiblePromotion(board, moves, Move{from, to_left, piece});
 
         // right en passant
         if (from % 8 != COL_H && board.en_passant == from + ONE_COL_RIGHT)
         {
-            moves.push_back(Move{from, to_right, piece});
+            moves.append(Move{from, to_right, piece});
             log(PAWN_MOVE, "Found en passant move from " + getSquareName(from) + " to " + getSquareName(to_right) + ".");
         }
 
         // left en passant
         if (from % 8 != COL_A && board.en_passant == from + ONE_COL_LEFT)
         {
-            moves.push_back(Move{from, to_left, piece});
+            moves.append(Move{from, to_left, piece});
             log(PAWN_MOVE, "Found en passant move from " + getSquareName(from) + " to " + getSquareName(to_left) + ".");
         }
     }
-
-    return moves;
 }
 
 // todo duplicate code
-std::vector<Move> MoveGenerator::generateKnightMoves(Board &board)
+void MoveGenerator::generateKnightMoves(Board &board, MoveList &moves)
 {
-    std::vector<Move> moves;
     bool white_to_move = board.white_to_move;
     Piece piece = white_to_move ? WHITE_KNIGHT : BLACK_KNIGHT;
     Bitboard knights = white_to_move ? board.white_knights : board.black_knights;
@@ -463,17 +449,14 @@ std::vector<Move> MoveGenerator::generateKnightMoves(Board &board)
         while (attacks)
         {
             Position to = clearRightmostSetBit(attacks);
-            moves.push_back(Move{square, to, piece});
+            moves.append(Move{square, to, piece});
             log(KNIGHT_MOVE, "Found knight move from " + getSquareName(square) + " to " + getSquareName(to) + ".");
         }
     }
-
-    return moves;
 }
 
-std::vector<Move> MoveGenerator::generateBishopMoves(Board &board)
+void MoveGenerator::generateBishopMoves(Board &board, MoveList &moves)
 {
-    std::vector<Move> moves;
     bool white_to_move = board.white_to_move;
     Piece piece = white_to_move ? WHITE_BISHOP : BLACK_BISHOP;
     Bitboard bishops = white_to_move ? board.white_bishops : board.black_bishops;
@@ -490,17 +473,14 @@ std::vector<Move> MoveGenerator::generateBishopMoves(Board &board)
         while (attacks)
         {
             Position to = clearRightmostSetBit(attacks);
-            moves.push_back(Move{square, to, piece});
+            moves.append(Move{square, to, piece});
             log(BISHOP_MOVE, "Found bishop move from " + getSquareName(square) + " to " + getSquareName(to) + ".");
         }
     }
-
-    return moves;
 }
 
-std::vector<Move> MoveGenerator::generateRookMoves(Board &board)
+void MoveGenerator::generateRookMoves(Board &board, MoveList &moves)
 {
-    std::vector<Move> moves;
     bool white_to_move = board.white_to_move;
     Piece piece = white_to_move ? WHITE_ROOK : BLACK_ROOK;
     Bitboard rooks = white_to_move ? board.white_rooks : board.black_rooks;
@@ -515,17 +495,14 @@ std::vector<Move> MoveGenerator::generateRookMoves(Board &board)
         while (attacks)
         {
             Position to = clearRightmostSetBit(attacks);
-            moves.push_back(Move{square, to, piece});
+            moves.append(Move{square, to, piece});
             log(ROOK_MOVE, "Found rook move from " + getSquareName(square) + " to " + getSquareName(to) + ".");
         }
     }
-
-    return moves;
 }
 
-std::vector<Move> MoveGenerator::generateQueenMoves(Board &board)
+void MoveGenerator::generateQueenMoves(Board &board, MoveList &moves)
 {
-    std::vector<Move> moves;
     bool white_to_move = board.white_to_move;
     Piece piece = white_to_move ? WHITE_QUEEN : BLACK_QUEEN;
     Bitboard queens = white_to_move ? board.white_queens : board.black_queens;
@@ -542,12 +519,10 @@ std::vector<Move> MoveGenerator::generateQueenMoves(Board &board)
         while (attacks)
         {
             Position to = clearRightmostSetBit(attacks);
-            moves.push_back(Move{square, to, piece});
+            moves.append(Move{square, to, piece});
             log(QUEEN_MOVE, "Found queen move from " + getSquareName(square) + " to " + getSquareName(to) + ".");
         }
     }
-
-    return moves;
 }
 
 // todo remove duplicate code

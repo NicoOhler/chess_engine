@@ -6,20 +6,18 @@ Game::Game(std::string FEN)
     board = generateBoardFromFEN(FEN);
 }
 
-void Game::loop()
+void Game::startGame()
 {
     printBoard();
-    std::vector<Move> moves = moveGenerator.generateMoves(board);
-    moves = removeIllegalMoves(moves, board);
+    MoveList moves = generateLegalMoves(board);
 
     do
     {
         Move move = getLegalMoveFromUser(moves);
         applyMove(board, move);
         printBoard();
-        moves = moveGenerator.generateMoves(board);
-        moves = removeIllegalMoves(moves, board);
-    } while (!isGameOver(board, moves.empty()));
+        moves = generateLegalMoves(board);
+    } while (!isGameOver(board, moves));
 
     std::cout << "GAME OVER" << std::endl;
 }
@@ -70,7 +68,7 @@ void Game::placePieceTypeOnBoard(Bitboard piece_type, char piece)
     }
 }
 
-Move Game::getLegalMoveFromUser(std::vector<Move> legal_moves)
+Move Game::getLegalMoveFromUser(MoveList legal_moves)
 {
     std::string input;
     while (true)
@@ -85,16 +83,19 @@ Move Game::getLegalMoveFromUser(std::vector<Move> legal_moves)
 
         Position from = 8 * (input[1] - '1') + (input[0] - 'a');
         Position to = 8 * (input[4] - '1') + (input[3] - 'a');
-        for (Move legal_move : legal_moves)
+        for (int i = 0; i < legal_moves.size; i++)
+        {
+            Move legal_move = legal_moves.moves[i];
             if (legal_move.from == from && legal_move.to == to)
                 return legal_move;
+        }
         std::cout << "Illegal move. Please enter a legal move." << std::endl;
     }
 }
 
 void Game::applyMove(Board &board, Move move)
 {
-    // todo decouple from board_to_print
+    // todo decouple from board_to_print, move applyMove + generateLegalMoves into MoveGenerator
     char captured_piece_type = board_to_print[7 - move.to / 8][move.to % 8];
     if (captured_piece_type != EMPTY)
     {
@@ -177,18 +178,19 @@ void Game::updateCastlingRights(Board &board, Move &move)
 {
     Piece king = whites_turn ? WHITE_KING : BLACK_KING;
     Piece rook = whites_turn ? WHITE_ROOK : BLACK_ROOK;
-    Bitboard castling_rights = whites_turn ? WHITE_CASTLING : BLACK_CASTLING;
+    Bitboard king_side = whites_turn ? WHITE_KING_SIDE_CASTLING : BLACK_KING_SIDE_CASTLING;
+    Bitboard queen_side = whites_turn ? WHITE_QUEEN_SIDE_CASTLING : BLACK_QUEEN_SIDE_CASTLING;
 
     if (move.piece == king)
-        board.castling_rights &= ~castling_rights;
+        board.castling_rights &= ~king_side & ~queen_side;
     else if (move.piece == rook)
     {
         Position king_side_rook_start_position = whites_turn ? WHITE_KING_SIDE_ROOK_START_POSITION : BLACK_KING_SIDE_ROOK_START_POSITION;
         Position queen_side_rook_start_position = whites_turn ? WHITE_QUEEN_SIDE_ROOK_START_POSITION : BLACK_QUEEN_SIDE_ROOK_START_POSITION;
         if (move.from == king_side_rook_start_position)
-            board.castling_rights &= ~WHITE_KING_SIDE_CASTLING;
+            board.castling_rights &= ~king_side;
         else if (move.from == queen_side_rook_start_position)
-            board.castling_rights &= ~WHITE_QUEEN_SIDE_CASTLING;
+            board.castling_rights &= ~queen_side;
     }
 }
 
@@ -216,35 +218,39 @@ void Game::detectDoublePawnPushForEnPassant(Board &board, Move &move)
         board.en_passant = NO_EN_PASSANT;
 }
 
-std::vector<Move> Game::removeIllegalMoves(std::vector<Move> moves, Board board)
+MoveList Game::generateLegalMoves(Board board)
 {
-    // simulate each move and check if king is in check
-    std::vector<Move> legal_moves;
+    MoveList legal_moves;
+    MoveList pseudo_legal_moves = moveGenerator.generatePseudoLegalMoves(board);
     Bitboard king = whites_turn ? board.white_king : board.black_king;
-    for (Move move : moves)
+
+    // simulate each move and check if king is in check
+    for (int i = 0; i < pseudo_legal_moves.size; i++)
     {
         Board board_copy = board;
+        Move move = pseudo_legal_moves.moves[i];
         applyMove(board_copy, move);
         if (moveGenerator.squaresThreatened(board_copy, king, false))
             log(REMOVE_ILLEGAL_MOVES, "Removed illegal move from " + getSquareName(move.from) + " to " + getSquareName(move.to) + ".");
         else
-            legal_moves.push_back(move);
+            legal_moves.append(move);
     }
     return legal_moves;
 }
 
-bool Game::isGameOver(Board &board, bool no_possible_moves)
+bool Game::isGameOver(Board &board, MoveList moves)
 {
-    if (!no_possible_moves)
+    if (!moves.empty())
         return false;
     Bitboard king = whites_turn ? board.white_king : board.black_king;
     bool king_in_check = moveGenerator.squaresThreatened(board, king, true);
     std::cout << (king_in_check ? "Checkmate" : "Stalemate") << std::endl;
     return true;
 }
+
 int main()
 {
     Game game = Game(START_FEN);
-    game.loop();
+    game.startGame();
     return 0;
 }
