@@ -162,3 +162,74 @@ Bitboard *BitBoard::Board::getBitboardByPiece(char piece)
     }
     return nullptr;
 }
+
+void BitBoard::Board::capturePiece(Position position)
+{
+    clear(white_to_move ? black_pieces : white_pieces, position);
+    clear(white_to_move ? black_pawns : white_pawns, position);
+    clear(white_to_move ? black_rooks : white_rooks, position);
+    clear(white_to_move ? black_knights : white_knights, position);
+    clear(white_to_move ? black_bishops : white_bishops, position);
+    clear(white_to_move ? black_queens : white_queens, position);
+}
+
+void BitBoard::printGameState(Board board)
+{
+    std::cout << (whites_turn ? "White" : "Black") << "'s turn" << std::endl
+              << std::endl;
+    printBoard(board);
+    if (board.en_passant != NO_EN_PASSANT)
+        std::cout << "En passant square: " << getSquareName(board.en_passant) << std::endl;
+    printCastlingRights(board);
+}
+
+void BitBoard::printBoard(Board board)
+{
+    char board_to_print[8][8];
+    placePiecesOnBoard(board, board_to_print);
+    std::cout << "  a b c d e f g h" << std::endl;
+    for (char i = 0; i < 8; i++)
+    {
+        std::cout << 8 - i << " ";
+        for (char j = 0; j < 8; j++)
+            std::cout << board_to_print[i][j] << " ";
+        std::cout << 8 - i << std::endl;
+    }
+    std::cout << "  a b c d e f g h" << std::endl
+              << std::endl;
+}
+
+void BitBoard::printCastlingRights(Board board)
+{
+    std::cout << "Castling rights: ";
+    if (board.castling_rights & WHITE_KING_SIDE_CASTLING)
+        std::cout << "K";
+    if (board.castling_rights & WHITE_QUEEN_SIDE_CASTLING)
+        std::cout << "Q";
+    if (board.castling_rights & BLACK_KING_SIDE_CASTLING)
+        std::cout << "k";
+    if (board.castling_rights & BLACK_QUEEN_SIDE_CASTLING)
+        std::cout << "q";
+    std::cout << std::endl
+              << std::endl;
+}
+
+void BitBoard::placePiecesOnBoard(Board board, char board_to_print[8][8])
+{
+    Bitboard pieces[12] = {board.white_pawns, board.white_rooks, board.white_knights, board.white_bishops, board.white_queens, board.white_king,
+                           board.black_pawns, board.black_rooks, board.black_knights, board.black_bishops, board.black_queens, board.black_king};
+    Piece piece_types[12] = {WHITE_PAWN, WHITE_ROOK, WHITE_KNIGHT, WHITE_BISHOP, WHITE_QUEEN, WHITE_KING,
+                             BLACK_PAWN, BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLACK_KING};
+    for (char i = 0; i < 8; i++)
+        for (char j = 0; j < 8; j++)
+            board_to_print[i][j] = ' ';
+
+    for (int i = 0; i < 12; i++)
+    {
+        while (pieces[i])
+        {
+            Position position = BitBoard::clearRightmostSetBit(pieces[i]);
+            board_to_print[7 - position / 8][position % 8] = piece_types[i];
+        }
+    }
+}

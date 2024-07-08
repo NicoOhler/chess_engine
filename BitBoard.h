@@ -4,6 +4,8 @@
 #include <iostream>
 #include <vector>
 
+#define whites_turn board.white_to_move // ! only usable if board is in scope
+
 const Bitboard WHITE_PAWNS_START = 0x000000000000FF00;
 const Bitboard WHITE_KNIGHTS_START = 0x0000000000000042;
 const Bitboard WHITE_BISHOPS_START = 0x0000000000000024;
@@ -33,10 +35,10 @@ const Bitboard BLACK_CASTLING = BLACK_KING_SIDE_CASTLING | BLACK_QUEEN_SIDE_CAST
 // castling positions
 const Position WHITE_KING_START_POSITION = 4;
 const Position BLACK_KING_START_POSITION = 60;
-const Position WHITE_KING_SIDE_ROOK_START_POSITION = 7;
-const Position WHITE_QUEEN_SIDE_ROOK_START_POSITION = 0;
-const Position BLACK_KING_SIDE_ROOK_START_POSITION = 63;
-const Position BLACK_QUEEN_SIDE_ROOK_START_POSITION = 56;
+const Bitboard WHITE_QUEEN_SIDE_ROOK_START_POSITION = 0x0000000000000001;
+const Bitboard WHITE_KING_SIDE_ROOK_START_POSITION = 0x0000000000000080;
+const Bitboard BLACK_KING_SIDE_ROOK_START_POSITION = 0x8000000000000000;
+const Bitboard BLACK_QUEEN_SIDE_ROOK_START_POSITION = 0x0100000000000000;
 
 namespace BitBoard
 {
@@ -56,7 +58,9 @@ namespace BitBoard
                              black_bishops(0), black_queens(0), black_king(0),
                              white_pieces(0), black_pieces(0), en_passant(NO_EN_PASSANT),
                              castling_rights(0), occupied(0) {}
+        // todo merge white_to_move and castling_rights into one bitboard
         bool white_to_move;
+        // todo make bitboards iterable with pointers next to each other
         Bitboard white_pawns;
         Bitboard white_rooks;
         Bitboard white_knights;
@@ -78,6 +82,7 @@ namespace BitBoard
         Bitboard castling_rights;
 
         Bitboard *getBitboardByPiece(char piece);
+        void capturePiece(Position position);
     };
 
     void movePiece(Bitboard &board, Position from, Position to);
@@ -89,4 +94,10 @@ namespace BitBoard
     int8 countSetBits(Bitboard board);
     Position clearRightmostSetBit(Bitboard &board); // sets the rightmost set bit to 0 and returns its index
     Board generateBoardFromFEN(std::string FEN);
+
+    // print board
+    void printGameState(Board board);
+    void printBoard(Board board);
+    void printCastlingRights(Board board);
+    void placePiecesOnBoard(Board board, char board_to_print[8][8]);
 }

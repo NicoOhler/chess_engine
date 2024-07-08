@@ -330,6 +330,32 @@ Bitboard MoveGenerator::precomputeSlidingBishopAttacks(Position square, Bitboard
     return attacks;
 }
 
+MoveList MoveGenerator::generateLegalMoves(Board board)
+{
+    // todo optimize, https://www.youtube.com/watch?v=U4ogK0MIzqk&t=435s, 8:00
+    MoveList legal_moves;
+    MoveList pseudo_legal_moves = generatePseudoLegalMoves(board);
+
+    // simulate each move and check if king (of player making a move) is in check
+    for (int i = 0; i < pseudo_legal_moves.size; i++)
+    {
+        Board board_copy = board;
+        Move move = pseudo_legal_moves.moves[i];
+        applyMove(board_copy, move);
+        Bitboard king = whites_turn ? board_copy.white_king : board_copy.black_king; // Note: whites_turn uses board not board_copy
+
+        if (squaresThreatened(board_copy, king, false))
+            log(REMOVE_ILLEGAL_MOVES, "Removed illegal move from " + getSquareName(move.from) + " to " + getSquareName(move.to) + ".");
+        else
+        {
+            legal_moves.append(move);
+            log(REMAINING_MOVES, "Found legal move from " + getSquareName(move.from) + " to " + getSquareName(move.to) + ".");
+        }
+    }
+
+    return legal_moves;
+}
+
 MoveList MoveGenerator::generatePseudoLegalMoves(Board &board)
 {
     MoveList moves;
@@ -590,4 +616,82 @@ bool MoveGenerator::squaresThreatened(Board &board, Bitboard squares, bool oppon
     }
 
     return false;
+}
+
+void MoveGenerator::applyMove(Board &board, Move move)
+{
+    board.capturePiece(move.to);
+    if (whites_turn ? move.piece == WHITE_PAWN : move.piece == BLACK_PAWN)
+    {
+        if (move.to == board.en_passant + (whites_turn ? ONE_ROW_UP : ONE_ROW_DOWN))
+            board.capturePiece(board.en_passant);
+        detectDoublePawnPushForEnPassant(board, move);
+    }
+
+    // move piece <=> update moved piece, own pieces and occupied squares
+    Bitboard *piece = board.getBitboardByPiece(move.piece);
+    BitBoard::movePiece(*piece, move.from, move.to);
+    BitBoard::movePiece(*(whites_turn ? &board.white_pieces : &board.black_pieces), move.from, move.to);
+    BitBoard::movePiece(board.occupied, move.from, move.to);
+
+    handleCastling(board, move);
+    if (move.promotion)
+    {
+        move.promotion = whites_turn ? toupper(move.promotion) : tolower(move.promotion);
+        BitBoard::clear(*board.getBitboardByPiece(move.piece), move.to);
+        BitBoard::set(*board.getBitboardByPiece(move.promotion), move.to);
+    }
+    whites_turn = !whites_turn;
+}
+
+void MoveGenerator::handleCastling(Board &board, Move &move)
+{
+    // todo simplify constant fetching, maybe two constant classes one for white and one for black
+    Bitboard king_side = whites_turn ? WHITE_KING_SIDE_CASTLING : BLACK_KING_SIDE_CASTLING;
+    Bitboard queen_side = whites_turn ? WHITE_QUEEN_SIDE_CASTLING : BLACK_QUEEN_SIDE_CASTLING;
+    Bitboard queen_side_rook_start_position = whites_turn ? WHITE_QUEEN_SIDE_ROOK_START_POSITION : BLACK_QUEEN_SIDE_ROOK_START_POSITION;
+    Bitboard king_side_rook_start_position = whites_turn ? WHITE_KING_SIDE_ROOK_START_POSITION : BLACK_KING_SIDE_ROOK_START_POSITION;
+    Bitboard *rooks = whites_turn ? &board.white_rooks : &board.black_rooks;
+
+    // apply castling move
+    if (move.castling & queen_side)
+    {
+        board.castling_rights &= ~queen_side & ~king_side; // clear castling rights
+        Position rook_from = move.from + 4 * ONE_COL_RIGHT;
+        Position rook_to = move.from + ONE_COL_RIGHT;
+        BitBoard::movePiece(*rooks, rook_from, rook_to);
+        return;
+    }
+
+    if (move.castling & king_side)
+    {
+        board.castling_rights &= ~queen_side & ~king_side; // clear castling rights
+        Position rook_from = move.from + 3 * ONE_COL_LEFT;
+        Position rook_to = move.from + ONE_COL_LEFT;
+        BitBoard::movePiece(*rooks, rook_from, rook_to);
+    }
+
+    // update castling rights if king or rook moved
+    bool king_moved = move.piece == (whites_turn ? WHITE_KING : BLACK_KING);
+    bool king_side_rook_gone = !(*rooks & king_side_rook_start_position);
+    bool queen_side_rook_gone = !(*rooks & queen_side_rook_start_position);
+
+    if (king_moved)
+        board.castling_rights &= ~king_side & ~queen_side;
+    if (king_side_rook_gone)
+        board.castling_rights &= ~king_side;
+    if (queen_side_rook_gone)
+        board.castling_rights &= ~queen_side;
+}
+
+void MoveGenerator::detectDoublePawnPushForEnPassant(Board &board, Move &move)
+{
+    Position from_row = move.from / 8;
+    Position to_row = move.to / 8;
+    if (whites_turn && from_row == ROW_2 && to_row == ROW_4)
+        board.en_passant = move.to;
+    else if (!whites_turn && from_row == ROW_7 && to_row == ROW_5)
+        board.en_passant = move.to;
+    else
+        board.en_passant = NO_EN_PASSANT;
 }

@@ -61,12 +61,15 @@ private:
     Bitboard bishop_attacks[NUM_SQUARES][512];
     Bitboard rook_attacks[NUM_SQUARES][4096];
 
+    // move generation masks
     void initializePawnCaptureMasks();
     void initializeKnightMoves();
     void initializeBishopBlockers();
     void initializeRookBlockers();
     void initializeKingMoves();
 
+    // move generation
+    MoveList generatePseudoLegalMoves(Board &board);
     void addPawnMoveWithPossiblePromotion(Board &board, MoveList &moves, Move move);
     void addCastlingMoves(Board &board, MoveList &moves);
     void generateKingMoves(Board &board, MoveList &moves);
@@ -82,8 +85,13 @@ private:
     Bitboard precomputeSlidingRookAttacks(Position square, Bitboard occupied);
     Bitboard precomputeSlidingBishopAttacks(Position square, Bitboard occupied);
 
+    // move application
+    void handleCastling(Board &board, Move &move);
+    void detectDoublePawnPushForEnPassant(Board &board, Move &move);
+
 public:
     MoveGenerator();
-    MoveList generatePseudoLegalMoves(Board &board);
+    void applyMove(Board &board, Move move);
+    MoveList generateLegalMoves(Board board);
     bool squaresThreatened(Board &board, Bitboard squares, bool opponent);
 };
