@@ -18,11 +18,11 @@ public:
     void startGame(std::string FEN = START_FEN);
     void applyMove(Board &board, Move move); // wrapper for move_generator.applyMove
     bool isGameOver(Board &board, MoveList moves);
-    uint64 perft(int depth, std::string FEN = START_FEN);
+    uint64 perft(int depth, std::string FEN = START_FEN, bool divide = false, int expected = 0);
 
 private:
     MoveGenerator move_generator;
     Move getLegalMoveFromUser(MoveList legal_moves);
     Piece getPromotionChoice();
-    uint64 perft(int depth, Board board);
+    uint64 perft(int depth, Board board, bool divide = false);
 };

@@ -30,12 +30,30 @@ Move Game::getLegalMoveFromUser(MoveList legal_moves)
     {
         std::cout << "Enter your move: ";
         std::getline(std::cin, input);
+
+        // print legal moves
+        if (input[0] == 'p')
+        {
+            std::cout << "Legal moves:" << std::endl;
+            for (int i = 0; i < legal_moves.size; i++)
+            {
+                Move legal_move = legal_moves.moves[i];
+                std::cout << "\t" << getSquareName(legal_move.from) << getSquareName(legal_move.to);
+                if (legal_move.promotion)
+                    std::cout << " (" << legal_move.promotion << ")";
+                std::cout << std::endl;
+            }
+            continue;
+        }
+
+        // skip invalid moves
         if (input[0] < 'a' || input[0] > 'h' || input[1] < '1' || input[1] > '8' || input[3] < 'a' || input[3] > 'h' || input[4] < '1' || input[4] > '8')
         {
             std::cout << "Invalid move. Please enter a move in the format: 'a2 c3'" << std::endl;
             continue;
         }
 
+        // return move if legal else skip
         Position from = 8 * (input[1] - '1') + (input[0] - 'a');
         Position to = 8 * (input[4] - '1') + (input[3] - 'a');
         for (int i = 0; i < legal_moves.size; i++)
@@ -74,46 +92,79 @@ bool Game::isGameOver(Board &board, MoveList moves)
 {
     if (!moves.empty())
         return false;
-    Bitboard king = whites_turn ? board.white_king : board.black_king;
+    Bitboard king = board.white_to_move ? board.white_king : board.black_king;
     bool king_in_check = move_generator.squaresThreatened(board, king, true);
     std::cout << (king_in_check ? "Checkmate" : "Stalemate") << std::endl;
     return true;
 }
 
-uint64 Game::perft(int depth, std::string FEN)
+uint64 Game::perft(int depth, std::string FEN, bool divide, int expected)
 {
+    assert(depth >= 1 && depth <= 10, "Perft depth must be between 1 and 10");
     Board board = generateBoardFromFEN(FEN);
-    uint64 nodes = perft(depth, board);
-    log(PERFT, "Perft with depth: " + std::to_string(depth));
-    uint64 diff = nodes > PERFT_RESULTS[depth] ? nodes - PERFT_RESULTS[depth] : PERFT_RESULTS[depth] - nodes;
+    log(PERFT, "Starting perft with depth: " + std::to_string(depth) + " and FEN: " + FEN);
+    uint64 nodes = perft(depth, board, divide);
     log(PERFT, "Found " + std::to_string(nodes) + " nodes");
-    assert(nodes == PERFT_RESULTS[depth], "Expected: " + std::to_string(PERFT_RESULTS[depth]) + "\nDiff: " + std::to_string(diff));
+    if (expected == 0)
+        expected = PERFT_RESULTS[depth];
+    uint64 diff = nodes > expected ? nodes - expected : expected - nodes;
+    assert(nodes == expected, "Expected: " + std::to_string(expected) + "\nDiff: " + std::to_string(diff));
     return nodes;
 }
 
-uint64 Game::perft(int depth, Board board)
+uint64 Game::perft(int depth, Board board, bool divide)
 {
-    if (depth == 0)
-        return 1ULL;
-
     MoveList legal_moves = move_generator.generateLegalMoves(board);
-    uint64 nodes = 0;
+    if (depth == 1)
+        return legal_moves.size;
 
+    uint64 total_nodes = 0;
     for (int i = 0; i < legal_moves.size; i++)
     {
         Board board_copy = board;
         applyMove(board_copy, legal_moves.moves[i]);
-        Bitboard king = whites_turn ? board_copy.white_king : board_copy.black_king;
+        Bitboard king = board.white_to_move ? board_copy.white_king : board_copy.black_king;
+        // ? is this second threat check redundant? its already in genLegalMoves
         if (!move_generator.squaresThreatened(board_copy, king, false))
-            nodes += perft(depth - 1, board_copy);
+        {
+            uint64 nodes = perft(depth - 1, board_copy);
+            if (divide)
+                log(PERFT, getSquareName(legal_moves.moves[i].from) + getSquareName(legal_moves.moves[i].to) + ": " + std::to_string(nodes));
+            total_nodes += nodes;
+        }
     }
-    return nodes;
+    return total_nodes;
 }
 
-int main()
+int main(int argc, char *argv[])
 {
     Game game;
-    game.startGame(START_FEN);
-    game.perft(5, START_FEN);
+    std::string start_fen = START_FEN;
+    int perft_depth = 0;
+    bool divide = false;
+    int expected_perft = 0;
+    for (int i = 1; i < argc; i++)
+    {
+        if (std::string(argv[i]) == "-f" && i + 1 < argc)
+            start_fen = argv[++i];
+        else if (std::string(argv[i]) == "-p" && i + 1 < argc)
+            perft_depth = std::stoi(argv[++i]);
+        else if (std::string(argv[i]) == "-e" && i + 1 < argc)
+            expected_perft = std::stoi(argv[++i]);
+        else if (std::string(argv[i]) == "-d")
+            divide = true;
+        else if (std::string(argv[i]) == "-h")
+            std::cout << "Usage: " << argv[0] << " [-f FEN] [-p depth] [-d] [-h]\n"
+                      << "  -f FEN: Start the game with the given FEN string\n"
+                      << "  -p depth: Run perft with the given depth\n"
+                      << "  -d: Divide perft results\n"
+                      << "  -h: Show this help message" << std::endl;
+    }
+
+    if (perft_depth > 0)
+        game.perft(perft_depth, start_fen, divide, expected_perft);
+    else
+        game.startGame(start_fen);
+
     return 0;
 }

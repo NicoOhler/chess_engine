@@ -171,11 +171,12 @@ void BitBoard::Board::capturePiece(Position position)
     clear(white_to_move ? black_knights : white_knights, position);
     clear(white_to_move ? black_bishops : white_bishops, position);
     clear(white_to_move ? black_queens : white_queens, position);
+    clear(occupied, position);
 }
 
 void BitBoard::printGameState(Board board)
 {
-    std::cout << (whites_turn ? "White" : "Black") << "'s turn" << std::endl
+    std::cout << (board.white_to_move ? "White" : "Black") << "'s turn" << std::endl
               << std::endl;
     printBoard(board);
     if (board.en_passant != NO_EN_PASSANT)

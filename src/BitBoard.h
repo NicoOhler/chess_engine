@@ -4,8 +4,6 @@
 #include <iostream>
 #include <vector>
 
-#define whites_turn board.white_to_move // ! only usable if board is in scope
-
 const Bitboard WHITE_PAWNS_START = 0x000000000000FF00;
 const Bitboard WHITE_KNIGHTS_START = 0x0000000000000042;
 const Bitboard WHITE_BISHOPS_START = 0x0000000000000024;

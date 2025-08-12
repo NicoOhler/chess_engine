@@ -1,5 +1,6 @@
 {
     "files.associations": {
+        "*.p": "prolog",
         "array": "cpp",
         "atomic": "cpp",
         "bit": "cpp",
@@ -44,7 +45,8 @@
         "stdexcept": "cpp",
         "streambuf": "cpp",
         "typeinfo": "cpp",
-        "fstream": "cpp"
+        "fstream": "cpp",
+        "optional": "cpp"
     },
     "files.watcherExclude": {
         "**/target": true

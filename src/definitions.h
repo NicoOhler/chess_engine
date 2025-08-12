@@ -9,14 +9,14 @@ typedef signed char Position;
 typedef Position Direction;
 typedef unsigned char Piece;
 
-// commonly used constants
+// basic constants
 const Position NUM_SQUARES = 64;
 const Position NUM_ROWS = 8;
 const Position NUM_COLS = 8;
 const std::string START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 const int MAX_MOVES = 256;
 
-// commonly used directions
+// directions
 const Position ONE_ROW_UP = 8;
 const Position ONE_ROW_DOWN = -8;
 const Position ONE_COL_LEFT = -1;
