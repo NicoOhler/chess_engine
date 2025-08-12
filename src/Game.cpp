@@ -114,6 +114,8 @@ uint64 Game::perft(int depth, std::string FEN, bool divide, int expected)
 
 uint64 Game::perft(int depth, Board board, bool divide)
 {
+    // if (depth == 0)
+    //     return 1;
     MoveList legal_moves = move_generator.generateLegalMoves(board);
     if (depth == 1)
         return legal_moves.size;

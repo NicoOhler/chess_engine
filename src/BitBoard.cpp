@@ -176,19 +176,20 @@ void BitBoard::Board::capturePiece(Position position)
 
 void BitBoard::printGameState(Board board)
 {
-    std::cout << (board.white_to_move ? "White" : "Black") << "'s turn" << std::endl
-              << std::endl;
     printBoard(board);
     if (board.en_passant != NO_EN_PASSANT)
         std::cout << "En passant square: " << getSquareName(board.en_passant) << std::endl;
     printCastlingRights(board);
+    std::cout << (board.white_to_move ? "White" : "Black") << "'s turn" << std::endl
+              << std::endl;
 }
 
 void BitBoard::printBoard(Board board)
 {
     char board_to_print[8][8];
     placePiecesOnBoard(board, board_to_print);
-    std::cout << "  a b c d e f g h" << std::endl;
+    std::cout << std::endl
+              << "  a b c d e f g h" << std::endl;
     for (char i = 0; i < 8; i++)
     {
         std::cout << 8 - i << " ";
@@ -211,8 +212,7 @@ void BitBoard::printCastlingRights(Board board)
         std::cout << "k";
     if (board.castling_rights & BLACK_QUEEN_SIDE_CASTLING)
         std::cout << "q";
-    std::cout << std::endl
-              << std::endl;
+    std::cout << std::endl;
 }
 
 void BitBoard::placePiecesOnBoard(Board board, char board_to_print[8][8])

@@ -621,6 +621,7 @@ bool MoveGenerator::squaresThreatened(Board &board, Bitboard squares, bool oppon
 void MoveGenerator::applyMove(Board &board, Move move)
 {
     board.capturePiece(move.to);
+    board.en_passant = NO_EN_PASSANT;
     if (board.white_to_move ? move.piece == WHITE_PAWN : move.piece == BLACK_PAWN)
     {
         if (move.to == board.en_passant + (board.white_to_move ? ONE_ROW_UP : ONE_ROW_DOWN))
@@ -692,6 +693,4 @@ void MoveGenerator::detectDoublePawnPushForEnPassant(Board &board, Move &move)
         board.en_passant = move.to;
     else if (!board.white_to_move && from_row == ROW_7 && to_row == ROW_5)
         board.en_passant = move.to;
-    else
-        board.en_passant = NO_EN_PASSANT;
 }
