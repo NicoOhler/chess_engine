@@ -13,3 +13,5 @@
 
 std::string getSquareName(Position square);
 Position getSquareIndex(std::string square);
+uint64 getCurrentTimeSeconds();
+std::string convertSecondsToString(uint64 seconds);

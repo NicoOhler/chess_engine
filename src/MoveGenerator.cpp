@@ -441,15 +441,25 @@ void MoveGenerator::generatePawnMoves(Board &board, MoveList &moves)
         Position to_right = from + direction_right;
         Bitboard attack = attack_right[from] & enemies;
         bool en_passant_right = (from % 8 != COL_H && board.en_passant == to_right);
-        if (attack || en_passant_right)
+        if (attack)
             addPawnMoveWithPossiblePromotion(board, moves, Move{from, to_right, piece});
+        else if (en_passant_right)
+        {
+            moves.append(Move{from, to_right, piece});
+            log(PAWN_MOVE, "Found en passant move from " + getSquareName(from) + " to " + getSquareName(to_right) + ".");
+        }
 
         // attack left
         Position to_left = from + direction_left;
         attack = attack_left[from] & enemies;
         bool en_passant_left = (from % 8 != COL_A && board.en_passant == to_left);
-        if (attack || en_passant_left)
+        if (attack)
             addPawnMoveWithPossiblePromotion(board, moves, Move{from, to_left, piece});
+        else if (en_passant_left)
+        {
+            moves.append(Move{from, to_left, piece});
+            log(PAWN_MOVE, "Found en passant move from " + getSquareName(from) + " to " + getSquareName(to_left) + ".");
+        }
     }
 }
 
@@ -642,51 +652,57 @@ void MoveGenerator::applyMove(Board &board, Move move)
 
 void MoveGenerator::handleCastling(Board &board, Move &move)
 {
+    if (!board.castling_rights)
+        return;
+
     // todo simplify constant fetching, maybe two constant classes one for white and one for black
     Bitboard king_side = board.white_to_move ? WHITE_KING_SIDE_CASTLING : BLACK_KING_SIDE_CASTLING;
     Bitboard queen_side = board.white_to_move ? WHITE_QUEEN_SIDE_CASTLING : BLACK_QUEEN_SIDE_CASTLING;
-    Bitboard queen_side_rook_start_position = board.white_to_move ? WHITE_QUEEN_SIDE_ROOK_START_POSITION : BLACK_QUEEN_SIDE_ROOK_START_POSITION;
-    Bitboard king_side_rook_start_position = board.white_to_move ? WHITE_KING_SIDE_ROOK_START_POSITION : BLACK_KING_SIDE_ROOK_START_POSITION;
-    Bitboard *rooks = board.white_to_move ? &board.white_rooks : &board.black_rooks;
+    Bitboard *own_rooks = board.white_to_move ? &board.white_rooks : &board.black_rooks;
     Bitboard *own_pieces = board.white_to_move ? &board.white_pieces : &board.black_pieces;
     Bitboard *occupied = &board.occupied;
 
-    // todo merge these ifs
     // apply castling move
-    if (move.castling & queen_side)
+    if (move.castling)
     {
+        bool king_side_castling = move.castling & king_side;
+        bool queen_side_castling = move.castling & queen_side;
+        assert(king_side_castling != queen_side_castling, "Castling move must be either queen side or king side.");
         board.castling_rights &= ~queen_side & ~king_side; // clear castling rights
-        Position rook_from = move.from + 4 * ONE_COL_LEFT;
-        Position rook_to = move.from + ONE_COL_LEFT;
-        BitBoard::movePiece(*rooks, rook_from, rook_to);
+
+        Position rook_from = move.from;
+        Position rook_to = move.from;
+        rook_from += queen_side_castling ? 4 * ONE_COL_LEFT : 3 * ONE_COL_RIGHT;
+        rook_to += queen_side_castling ? ONE_COL_LEFT : ONE_COL_RIGHT;
+
+        // update rook position, king already updated by applyMove
+        BitBoard::movePiece(*own_rooks, rook_from, rook_to);
         BitBoard::movePiece(*own_pieces, rook_from, rook_to);
         BitBoard::movePiece(*occupied, rook_from, rook_to);
         return;
     }
 
-    if (move.castling & king_side)
-    {
-        board.castling_rights &= ~queen_side & ~king_side; // clear castling rights
-        Position rook_from = move.from + 3 * ONE_COL_RIGHT;
-        Position rook_to = move.from + ONE_COL_RIGHT;
-        BitBoard::movePiece(*rooks, rook_from, rook_to);
-        BitBoard::movePiece(*own_pieces, rook_from, rook_to);
-        BitBoard::movePiece(*occupied, rook_from, rook_to);
-        return;
-    }
-    assert(!move.castling, "Move is not castling, but castling flag is set.");
+    // update castling rights if own king or rook moved or enemy rook captured
+    Bitboard king_side_rook_start_position = board.white_to_move ? WHITE_KING_SIDE_ROOK_START_POSITION : BLACK_KING_SIDE_ROOK_START_POSITION;
+    Bitboard queen_side_rook_start_position = board.white_to_move ? WHITE_QUEEN_SIDE_ROOK_START_POSITION : BLACK_QUEEN_SIDE_ROOK_START_POSITION;
+    Bitboard enemy_king_side_rook_start_position = board.white_to_move ? BLACK_KING_SIDE_ROOK_START_POSITION : WHITE_KING_SIDE_ROOK_START_POSITION;
+    Bitboard enemy_queen_side_rook_start_position = board.white_to_move ? BLACK_QUEEN_SIDE_ROOK_START_POSITION : WHITE_QUEEN_SIDE_ROOK_START_POSITION;
 
-    // update castling rights if king or rook moved
     bool king_moved = move.piece == (board.white_to_move ? WHITE_KING : BLACK_KING);
-    bool king_side_rook_gone = !(*rooks & king_side_rook_start_position);
-    bool queen_side_rook_gone = !(*rooks & queen_side_rook_start_position);
-
+    bool king_side_rook_gone = !(*own_rooks & king_side_rook_start_position);
+    bool queen_side_rook_gone = !(*own_rooks & queen_side_rook_start_position);
+    bool enemy_queen_side_rook_captured = *own_pieces & (board.white_to_move ? BLACK_QUEEN_SIDE_ROOK_START_POSITION : WHITE_QUEEN_SIDE_ROOK_START_POSITION);
+    bool enemy_king_side_rook_captured = *own_pieces & (board.white_to_move ? BLACK_KING_SIDE_ROOK_START_POSITION : WHITE_KING_SIDE_ROOK_START_POSITION);
     if (king_moved)
         board.castling_rights &= ~king_side & ~queen_side;
     if (king_side_rook_gone)
         board.castling_rights &= ~king_side;
     if (queen_side_rook_gone)
         board.castling_rights &= ~queen_side;
+    if (enemy_queen_side_rook_captured)
+        board.castling_rights &= ~(board.white_to_move ? BLACK_QUEEN_SIDE_CASTLING : WHITE_QUEEN_SIDE_CASTLING);
+    if (enemy_king_side_rook_captured)
+        board.castling_rights &= ~(board.white_to_move ? BLACK_KING_SIDE_CASTLING : WHITE_KING_SIDE_CASTLING);
 }
 
 void MoveGenerator::detectDoublePawnPushForEnPassant(Board &board, Move &move)

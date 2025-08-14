@@ -103,8 +103,11 @@ uint64 Game::perft(int depth, std::string FEN, bool divide, uint64 expected)
     assert(depth >= 1 && depth <= 10, "Perft depth must be between 1 and 10");
     Board board = generateBoardFromFEN(FEN);
     log(PERFT, "Starting perft with depth: " + std::to_string(depth) + " and FEN: " + FEN);
+    uint64 start_time = getCurrentTimeSeconds();
     uint64 nodes = perft(depth, board, divide);
+    uint64 end_time = getCurrentTimeSeconds();
     log(PERFT, "Nodes searched: " + std::to_string(nodes));
+    log(PERFT, "Time taken: " + convertSecondsToString(end_time - start_time));
     if (expected == 0)
         expected = PERFT_RESULTS[depth];
     uint64 diff = nodes > expected ? nodes - expected : expected - nodes;

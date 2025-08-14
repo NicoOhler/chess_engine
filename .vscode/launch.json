@@ -47,7 +47,32 @@
             "miDebuggerPath": "/usr/bin/gdb",
         },
         {
-            "name": "Perft w/ Divide",
+            "name": "Perft 5 w/ Divide",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/Game",
+            "args": [
+                "-p",
+                "5",
+                "-d"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "Build Chess Engine",
+            "miDebuggerPath": "/usr/bin/gdb",
+        },
+        {
+            "name": "Perft 7 w/ Divide",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/Game",
@@ -83,7 +108,7 @@
                 "5",
                 "-d",
                 "-e",
-                "8031647685"
+                "193690690"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
