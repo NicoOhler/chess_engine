@@ -104,7 +104,7 @@ uint64 Game::perft(int depth, std::string FEN, bool divide, uint64 expected)
     Board board = generateBoardFromFEN(FEN);
     log(PERFT, "Starting perft with depth: " + std::to_string(depth) + " and FEN: " + FEN);
     uint64 nodes = perft(depth, board, divide);
-    log(PERFT, "Found " + std::to_string(nodes) + " nodes");
+    log(PERFT, "Nodes searched: " + std::to_string(nodes));
     if (expected == 0)
         expected = PERFT_RESULTS[depth];
     uint64 diff = nodes > expected ? nodes - expected : expected - nodes;

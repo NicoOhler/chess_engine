@@ -57,6 +57,11 @@ Position BitBoard::clearRightmostSetBit(Bitboard &board)
     return index_of_LSB;
 }
 
+Position BitBoard::getRightmostSetBit(Bitboard &board)
+{
+    return __builtin_ctzll(board);
+}
+
 BitBoard::Board BitBoard::generateBoardFromFEN(std::string FEN)
 {
     Board board = Board(EMPTY);

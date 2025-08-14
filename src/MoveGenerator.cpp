@@ -361,12 +361,12 @@ MoveList MoveGenerator::generateLegalMoves(Board board)
 MoveList MoveGenerator::generatePseudoLegalMoves(Board &board)
 {
     MoveList moves;
-    generateKingMoves(board, moves);
     generatePawnMoves(board, moves);
     generateKnightMoves(board, moves);
     generateBishopMoves(board, moves);
     generateRookMoves(board, moves);
     generateQueenMoves(board, moves);
+    generateKingMoves(board, moves);
     return moves;
 }
 
@@ -377,12 +377,8 @@ void MoveGenerator::generateKingMoves(Board &board, MoveList &moves)
     Bitboard king = white_to_move ? board.white_king : board.black_king;
     Bitboard own_pieces = white_to_move ? board.white_pieces : board.black_pieces;
 
-    // castling moves
-    if (!squaresThreatened(board, king, true))
-        addCastlingMoves(board, moves);
-
     // regular moves and attacks
-    Position from = clearRightmostSetBit(king);
+    Position from = getRightmostSetBit(king);
     Bitboard attacks = king_moves[from] & ~own_pieces;
     while (attacks)
     {
@@ -393,6 +389,10 @@ void MoveGenerator::generateKingMoves(Board &board, MoveList &moves)
         moves.append(Move{from, to, piece});
         log(KING_MOVE, "Found king move from " + getSquareName(from) + " to " + getSquareName(to) + ".");
     }
+
+    // castling moves
+    if (!squaresThreatened(board, king, true))
+        addCastlingMoves(board, moves);
 }
 
 void MoveGenerator::generatePawnMoves(Board &board, MoveList &moves)

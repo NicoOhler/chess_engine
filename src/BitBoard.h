@@ -93,6 +93,7 @@ namespace BitBoard
     void printBitboard(Bitboard board);
     int8 countSetBits(Bitboard board);
     Position clearRightmostSetBit(Bitboard &board); // sets the rightmost set bit to 0 and returns its index
+    Position getRightmostSetBit(Bitboard &board);
     Board generateBoardFromFEN(std::string FEN);
 
     // print board
