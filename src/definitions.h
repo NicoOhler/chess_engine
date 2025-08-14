@@ -40,7 +40,8 @@ enum PIECES
     BLACK_ROOK = 'r',
     BLACK_QUEEN = 'q',
     BLACK_KING = 'k',
-    EMPTY = ' '
+    EMPTY = ' ',
+    UNDO = 'u'
 };
 
 enum ROWS

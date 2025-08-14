@@ -42,7 +42,8 @@ const Bitboard BLACK_QUEEN_SIDE_ROOK_START_POSITION = 0x0100000000000000;
 
 namespace BitBoard
 {
-    struct Board
+    // Bitboard represents a chess board (64 bit number) with pieces represented as bits
+    struct Board // represents game state
     {
         Board() : white_to_move(true),
                   white_pawns(WHITE_PAWNS_START), white_rooks(WHITE_ROOKS_START), white_knights(WHITE_KNIGHTS_START),
@@ -83,6 +84,13 @@ namespace BitBoard
 
         Bitboard *getBitboardByPiece(char piece);
         void capturePiece(Position position);
+    };
+
+    struct Node // represents a game state in a double linked list of game states
+    {
+        Board board;
+        struct Node *next;
+        struct Node *prev;
     };
 
     void movePiece(Bitboard &board, Position from, Position to);
