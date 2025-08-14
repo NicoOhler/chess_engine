@@ -98,7 +98,7 @@ bool Game::isGameOver(Board &board, MoveList moves)
     return true;
 }
 
-uint64 Game::perft(int depth, std::string FEN, bool divide, int expected)
+uint64 Game::perft(int depth, std::string FEN, bool divide, uint64 expected)
 {
     assert(depth >= 1 && depth <= 10, "Perft depth must be between 1 and 10");
     Board board = generateBoardFromFEN(FEN);
@@ -125,15 +125,10 @@ uint64 Game::perft(int depth, Board board, bool divide)
     {
         Board board_copy = board;
         applyMove(board_copy, legal_moves.moves[i]);
-        Bitboard king = board.white_to_move ? board_copy.white_king : board_copy.black_king;
-        // ? is this second threat check redundant? its already in genLegalMoves
-        if (!move_generator.squaresThreatened(board_copy, king, false))
-        {
-            uint64 nodes = perft(depth - 1, board_copy);
-            if (divide)
-                log(PERFT, getSquareName(legal_moves.moves[i].from) + getSquareName(legal_moves.moves[i].to) + ": " + std::to_string(nodes));
-            total_nodes += nodes;
-        }
+        uint64 nodes = perft(depth - 1, board_copy);
+        if (divide)
+            log(PERFT, getSquareName(legal_moves.moves[i].from) + getSquareName(legal_moves.moves[i].to) + ": " + std::to_string(nodes));
+        total_nodes += nodes;
     }
     return total_nodes;
 }
@@ -152,7 +147,7 @@ int main(int argc, char *argv[])
         else if (std::string(argv[i]) == "-p" && i + 1 < argc)
             perft_depth = std::stoi(argv[++i]);
         else if (std::string(argv[i]) == "-e" && i + 1 < argc)
-            expected_perft = std::stoi(argv[++i]);
+            expected_perft = std::stoull(argv[++i]);
         else if (std::string(argv[i]) == "-d")
             divide = true;
         else if (std::string(argv[i]) == "-h")

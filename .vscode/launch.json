@@ -29,7 +29,7 @@
             "program": "${workspaceFolder}/Game",
             "args": [
                 "-f",
-                "rnbqkbnr/ppp2ppp/8/3pp3/6PP/8/PPPPPP2/RNBQKBNR w KQkq e6 0 3"
+                "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - "
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -47,37 +47,13 @@
             "miDebuggerPath": "/usr/bin/gdb",
         },
         {
-            "name": "Perft 5",
+            "name": "Perft w/ Divide",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/Game",
             "args": [
                 "-p",
-                "5"
-            ],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ],
-            "preLaunchTask": "Build Chess Engine",
-            "miDebuggerPath": "/usr/bin/gdb",
-        },
-        {
-            "name": "Perft 5 w/ Divide",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/Game",
-            "args": [
-                "-p",
-                "5",
+                "7",
                 "-d"
             ],
             "stopAtEntry": false,
@@ -102,12 +78,12 @@
             "program": "${workspaceFolder}/Game",
             "args": [
                 "-f",
-                "rnbqkbnr/ppp2ppp/8/3pp3/6PP/8/PPPPPP2/RNBQKBNR w KQkq e6 0 3",
+                "rnbqkbnr/pppppppp/8/8/8/6P1/PPPPPP1P/RNBQKBNR b KQkq - 0 1",
                 "-p",
-                "2",
+                "6",
                 "-d",
                 "-e",
-                "0"
+                "8031647685"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

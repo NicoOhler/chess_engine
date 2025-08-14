@@ -18,7 +18,7 @@ public:
     void startGame(std::string FEN = START_FEN);
     void applyMove(Board &board, Move move); // wrapper for move_generator.applyMove
     bool isGameOver(Board &board, MoveList moves);
-    uint64 perft(int depth, std::string FEN = START_FEN, bool divide = false, int expected = 0);
+    uint64 perft(int depth, std::string FEN = START_FEN, bool divide = true, uint64 expected = 0);
 
 private:
     MoveGenerator move_generator;
