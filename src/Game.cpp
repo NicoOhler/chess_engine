@@ -1,6 +1,6 @@
 #include "Game.h"
 
-void Game::startGame(std::string FEN)
+void Game::startConsoleGame(std::string FEN)
 {
     Board board = generateBoardFromFEN(FEN);
     if (history_enabled)
@@ -123,7 +123,7 @@ bool Game::isGameOver(Board &board, MoveList moves)
     return true;
 }
 
-uint64 Game::perft(int depth, std::string FEN, bool divide, uint64 expected)
+uint64 Game::startPerft(int depth, std::string FEN, bool divide, uint64 expected)
 {
     assert(depth >= 1 && depth <= 10, "Perft depth must be between 1 and 10");
     history_enabled = false;
@@ -140,6 +140,43 @@ uint64 Game::perft(int depth, std::string FEN, bool divide, uint64 expected)
         assert(nodes == expected, "Expected: " + std::to_string(expected) + "\nDiff: " + std::to_string(diff));
     }
     return nodes;
+}
+
+void Game::startUCI()
+{
+    std::cout << "ChessEngine started in UCI mode" << std::endl;
+
+    std::string command;
+    while (std::getline(std::cin, command))
+    {
+        if (command == "uci")
+        {
+            std::cout << "id name Cumshot Chess Engine" << std::endl;
+            std::cout << "id author Nico Ohler" << std::endl;
+            std::cout << "uciok" << std::endl;
+        }
+        else if (command == "isready")
+            std::cout << "readyok" << std::endl;
+        // position [ fen fenstring | startpos ] moves move1 ... movei
+        else if (command.substr(0, 8) == "position")
+        {
+            std::string fen = command.substr(9);
+            if (fen == "startpos")
+                fen = START_FEN;
+            Board board = generateBoardFromFEN(fen);
+            if (history_enabled)
+                initializeGameHistory(board);
+            log(CHESS_BOARD, "Initialized board with FEN: " + fen);
+        }
+        else if (command.substr(0, 4) == "go ")
+        {
+            // parse depth or other parameters if needed
+            int depth = 1; // default depth
+            startPerft(depth);
+        }
+        else if (command == "quit")
+            exit(0);
+    }
 }
 
 uint64 Game::perft(int depth, Board board, bool divide)
@@ -184,15 +221,28 @@ void Game::addBoardToHistory(Board board)
     game_history = new_node;
 }
 
+void printHelp(std::string executable_name)
+{
+    std::cout << "Usage: " << executable_name << " [-m mode] [-f FEN] [-p depth] [-d] [-h]\n"
+              << "  -m mode: Set the engine mode (u for UCI, c for console, p for perft)\n"
+              << "  -f FEN: Start the game with the given FEN string\n"
+              << "  -p depth: Run perft with the given depth\n"
+              << "  -d: Divide perft results\n"
+              << "  -h: Show this help message" << std::endl;
+}
+
 int main(int argc, char *argv[])
 {
+    Mode mode = M_UCI;
     std::string start_fen = START_FEN;
     int perft_depth = 0;
     bool divide = false;
     int expected_perft = 0;
     for (int i = 1; i < argc; i++)
     {
-        if (std::string(argv[i]) == "-f" && i + 1 < argc)
+        if (std::string(argv[i]) == "-m" && i + 1 < argc)
+            mode = argv[++i][0];
+        else if (std::string(argv[i]) == "-f" && i + 1 < argc)
             start_fen = argv[++i];
         else if (std::string(argv[i]) == "-p" && i + 1 < argc)
             perft_depth = std::stoi(argv[++i]);
@@ -200,23 +250,35 @@ int main(int argc, char *argv[])
             expected_perft = std::stoull(argv[++i]);
         else if (std::string(argv[i]) == "-d")
             divide = true;
+        else if (std::string(argv[i]) == "-h")
+        {
+            printHelp(argv[0]);
+            exit(0);
+        }
         else
         {
-            std::cout << "Usage: " << argv[0] << " [-f FEN] [-p depth] [-d] [-h]\n"
-                      << "  -f FEN: Start the game with the given FEN string\n"
-                      << "  -p depth: Run perft with the given depth\n"
-                      << "  -d: Divide perft results\n"
-                      << "  -h: Show this help message" << std::endl;
-            if (std::string(argv[i]) != "-h")
-                exit(1);
+            std::cout << "Unknown option: " << argv[i] << std::endl;
+            printHelp(argv[0]);
+            exit(1);
         }
     }
 
     Game game;
-    if (perft_depth > 0)
-        game.perft(perft_depth, start_fen, divide, expected_perft);
-    else
-        game.startGame(start_fen);
-
-    return 0;
+    switch (mode)
+    {
+    case M_UCI:
+        game.startUCI();
+        break;
+    case M_CONSOLE:
+        game.startConsoleGame(start_fen);
+        break;
+    case M_PERFT:
+        game.startPerft(perft_depth, start_fen, divide, expected_perft);
+        break;
+    default:
+        std::cout << "Invalid mode. Use 'u' for UCI, 'c' for console or 'p' for perft." << std::endl;
+        exit(1);
+        break;
+    }
+    exit(0);
 }

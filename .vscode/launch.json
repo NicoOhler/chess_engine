@@ -2,11 +2,38 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "UCI Mode",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/Game",
+            "args": [
+                "-m",
+                "u"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "Build Chess Engine",
+            "miDebuggerPath": "/usr/bin/gdb",
+        },
+        {
             "name": "Play with Default Board",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/Game",
-            "args": [],
+            "args": [
+                "-m",
+                "c"
+            ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
@@ -28,6 +55,8 @@
             "request": "launch",
             "program": "${workspaceFolder}/Game",
             "args": [
+                "-m",
+                "c",
                 "-f",
                 "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - "
             ],
@@ -52,6 +81,8 @@
             "request": "launch",
             "program": "${workspaceFolder}/Game",
             "args": [
+                "-m",
+                "p",
                 "-p",
                 "5",
                 "-d"
@@ -77,6 +108,8 @@
             "request": "launch",
             "program": "${workspaceFolder}/Game",
             "args": [
+                "-m",
+                "p",
                 "-p",
                 "7",
                 "-d"
@@ -102,6 +135,8 @@
             "request": "launch",
             "program": "${workspaceFolder}/Game",
             "args": [
+                "-m",
+                "p",
                 "-f",
                 "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - ",
                 "-p",

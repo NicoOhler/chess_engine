@@ -8,6 +8,7 @@ typedef signed char int8;
 typedef signed char Position;
 typedef Position Direction;
 typedef unsigned char Piece;
+typedef unsigned char Mode;
 
 // basic constants
 const Position NUM_SQUARES = 64;
@@ -66,4 +67,11 @@ enum COLUMNS
     COL_F,
     COL_G,
     COL_H
+};
+
+enum MODES
+{
+    M_UCI = 'u',
+    M_CONSOLE = 'c',
+    M_PERFT = 'p'
 };

@@ -14,11 +14,12 @@ public:
 
     bool history_enabled = true;
 
-    void startGame(std::string FEN = START_FEN);
+    void startConsoleGame(std::string FEN = START_FEN);
+    uint64 startPerft(int depth, std::string FEN = START_FEN, bool divide = true, uint64 expected = 0);
+    void startUCI();
     void applyMove(Board &board, Move move);
     Board undoMove();
     bool isGameOver(Board &board, MoveList moves);
-    uint64 perft(int depth, std::string FEN = START_FEN, bool divide = true, uint64 expected = 0);
     void initializeGameHistory(Board board);
     void addBoardToHistory(Board board);
 
