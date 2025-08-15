@@ -1,11 +1,11 @@
-#include "Game.h"
+#include "Engine.h"
 
-void Engine::startConsoleGame(std::string FEN)
+void Engine::startConsoleGame(std::string fen)
 {
-    Board board = generateBoardFromFEN(FEN);
-    if (history_enabled)
-        initializeGameHistory(board);
-    log(CHESS_BOARD, "Initialized board with FEN: " + FEN);
+    history_enabled = true;
+    Board board = generateBoardFromFEN(fen);
+    initializeGameHistory(board);
+    log(CHESS_BOARD, "Initialized board with FEN: " + fen);
     printGameState(board);
     MoveList moves = move_generator.generateLegalMoves(board);
 
@@ -18,9 +18,8 @@ void Engine::startConsoleGame(std::string FEN)
             applyMove(board, move);
         printGameState(board);
         moves = move_generator.generateLegalMoves(board);
-    } while (!isGameOver(board, moves));
-
-    std::cout << "GAME OVER" << std::endl;
+    } while (getGameState(board, moves) == IN_PROGRESS);
+    std::cout << (getGameState(board, moves) == CHECKMATE ? "Checkmate" : "Stalemate") << std::endl;
 }
 
 void Engine::applyMove(Board &board, Move move)
@@ -113,22 +112,19 @@ Piece Engine::getPromotionChoice()
     }
 }
 
-bool Engine::isGameOver(Board &board, MoveList moves)
+GameState Engine::getGameState(Board &board, MoveList moves)
 {
     if (!moves.empty())
-        return false;
+        return IN_PROGRESS;
     Bitboard king = board.white_to_move ? board.white_king : board.black_king;
-    bool king_in_check = move_generator.squaresThreatened(board, king, true);
-    std::cout << (king_in_check ? "Checkmate" : "Stalemate") << std::endl;
-    return true;
+    return move_generator.squaresThreatened(board, king, true) ? CHECKMATE : STALEMATE;
 }
 
-uint64 Engine::startPerft(int depth, std::string FEN, bool divide, uint64 expected)
+uint64 Engine::startPerft(int depth, std::string fen, bool divide, uint64 expected)
 {
     assert(depth >= 1 && depth <= 10, "Perft depth must be between 1 and 10");
-    history_enabled = false;
-    Board board = generateBoardFromFEN(FEN);
-    log(PERFT, "Starting perft with depth: " + std::to_string(depth) + " and FEN: " + FEN);
+    Board board = generateBoardFromFEN(fen);
+    log(PERFT, "Starting perft with depth: " + std::to_string(depth) + " and FEN: " + fen);
     uint64 start_time = getCurrentTimeSeconds();
     uint64 nodes = perft(depth, board, divide);
     uint64 end_time = getCurrentTimeSeconds();
@@ -221,6 +217,61 @@ void Engine::addBoardToHistory(Board board)
     game_history = new_node;
 }
 
+void Engine::testSearch(std::string fen)
+{
+    Board board = generateBoardFromFEN(fen);
+    log(CHESS_BOARD, "Testing search with FEN: " + fen);
+    uint64 start_time = getCurrentTimeSeconds();
+    Score score = search(board, 3, NEG_INFINITY, POS_INFINITY);
+    uint64 end_time = getCurrentTimeSeconds();
+    log(PERFT, "Search score: " + std::to_string(score));
+    log(PERFT, "Time taken: " + convertSecondsToString(end_time - start_time));
+}
+
+// negamax with alpha beta pruning and quiescence
+Score Engine::search(Board board, int depth, Score alpha, Score beta)
+{
+    // todo quiescence + iterative deepening
+    // immediately return evaluation for leaf nodes (max depth, stalemate or checkmate)
+    if (depth == 0)
+        return evaluateBoard(board);
+
+    MoveList legal_moves = move_generator.generateLegalMoves(board);
+    GameState game_state = getGameState(board, legal_moves);
+    if (game_state == CHECKMATE)
+        return NEG_INFINITY;
+    if (game_state == STALEMATE)
+        return 0;
+
+    // evaluate moves until pruning possible
+    Score max = NEG_INFINITY;
+    for (int i = 0; i < legal_moves.size; i++)
+    {
+        Move move = legal_moves.moves[i];
+        Board board_copy = board;
+        applyMove(board_copy, move);
+        // alpha beta are swapped since the opponent tries to minimize our score
+        Score score = -search(board_copy, depth - 1, -beta, -alpha);
+        if (score > max)
+        {
+            max = score;
+            if (score > alpha)
+                alpha = score;
+        }
+        // prune since score of current subtree is already worse than beta
+        // beta = value of the best move found so far by the parent
+        if (beta <= alpha)
+            break;
+    }
+    return max;
+}
+
+// todo replace with actual evaluation function
+Score Engine::evaluateBoard(Board board)
+{
+    return rand() % 100;
+}
+
 void printHelp(std::string executable_name)
 {
     std::cout << "Usage: " << executable_name << " [-m mode] [-f FEN] [-p depth] [-d] [-h]\n"
@@ -233,6 +284,11 @@ void printHelp(std::string executable_name)
 
 int main(int argc, char *argv[])
 {
+    Engine engine;
+    engine.testSearch();
+    exit(0);
+
+    /*
     Mode mode = M_UCI;
     std::string start_fen = START_FEN;
     int perft_depth = 0;
@@ -241,15 +297,15 @@ int main(int argc, char *argv[])
     for (int i = 1; i < argc; i++)
     {
         if (std::string(argv[i]) == "-m" && i + 1 < argc)
-            mode = argv[++i][0];
+        mode = argv[++i][0];
         else if (std::string(argv[i]) == "-f" && i + 1 < argc)
-            start_fen = argv[++i];
+        start_fen = argv[++i];
         else if (std::string(argv[i]) == "-p" && i + 1 < argc)
-            perft_depth = std::stoi(argv[++i]);
+        perft_depth = std::stoi(argv[++i]);
         else if (std::string(argv[i]) == "-e" && i + 1 < argc)
-            expected_perft = std::stoull(argv[++i]);
+        expected_perft = std::stoull(argv[++i]);
         else if (std::string(argv[i]) == "-d")
-            divide = true;
+        divide = true;
         else if (std::string(argv[i]) == "-h")
         {
             printHelp(argv[0]);
@@ -263,22 +319,23 @@ int main(int argc, char *argv[])
         }
     }
 
-    Engine game;
+    Engine engine;
     switch (mode)
     {
-    case M_UCI:
-        game.startUCI();
+        case M_UCI:
+        engine.startUCI();
         break;
-    case M_CONSOLE:
-        game.startConsoleGame(start_fen);
+        case M_CONSOLE:
+        engine.startConsoleGame(start_fen);
         break;
-    case M_PERFT:
-        game.startPerft(perft_depth, start_fen, divide, expected_perft);
+        case M_PERFT:
+        engine.startPerft(perft_depth, start_fen, divide, expected_perft);
         break;
-    default:
+        default:
         std::cout << "Invalid mode. Use 'u' for UCI, 'c' for console or 'p' for perft." << std::endl;
         exit(1);
         break;
     }
     exit(0);
+    */
 }

@@ -9,7 +9,7 @@
                 "-g",
                 "${workspaceFolder}/src/*.cpp",
                 "-o",
-                "${workspaceFolder}/Game"
+                "${workspaceFolder}/engine"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"

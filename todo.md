@@ -1,3 +1,7 @@
 ### TODO
-+ UCI
-+ mby multithreaded or other optimizations
++ build rudimentary evaluation function
++ connect engine to GUI via UCI
++ do optimizations (iterative deepening, ...)
++ quiescence
++ mby multithreaded
++ train NNUE

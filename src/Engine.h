@@ -12,16 +12,19 @@ public:
     Engine() = default;
     ~Engine() = default;
 
-    bool history_enabled = true;
+    bool history_enabled = false;
 
-    void startConsoleGame(std::string FEN = START_FEN);
-    uint64 startPerft(int depth, std::string FEN = START_FEN, bool divide = true, uint64 expected = 0);
+    void startConsoleGame(std::string fen = START_FEN);
+    uint64 startPerft(int depth, std::string fen = START_FEN, bool divide = true, uint64 expected = 0);
     void startUCI();
     void applyMove(Board &board, Move move);
     Board undoMove();
-    bool isGameOver(Board &board, MoveList moves);
+    GameState getGameState(Board &board, MoveList moves);
     void initializeGameHistory(Board board);
     void addBoardToHistory(Board board);
+    void testSearch(std::string fen = START_FEN);
+    Score search(Board board, int depth, Score alpha, Score beta);
+    Score evaluateBoard(Board board);
 
 private:
     Node *game_history = nullptr;

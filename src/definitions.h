@@ -2,6 +2,7 @@
 #include <string>
 
 typedef unsigned long long uint64;
+typedef signed long Score;
 typedef uint64 Bitboard;
 typedef unsigned char uint8;
 typedef signed char int8;
@@ -9,6 +10,7 @@ typedef signed char Position;
 typedef Position Direction;
 typedef unsigned char Piece;
 typedef unsigned char Mode;
+typedef unsigned char GameState;
 
 // basic constants
 const Position NUM_SQUARES = 64;
@@ -16,6 +18,8 @@ const Position NUM_ROWS = 8;
 const Position NUM_COLS = 8;
 const std::string START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 const int MAX_MOVES = 256;
+const Score POS_INFINITY = 2147483647;
+const Score NEG_INFINITY = -2147483648;
 
 // directions
 const Position ONE_ROW_UP = 8;
@@ -74,4 +78,11 @@ enum MODES
     M_UCI = 'u',
     M_CONSOLE = 'c',
     M_PERFT = 'p'
+};
+
+enum GAME_STATE
+{
+    IN_PROGRESS,
+    CHECKMATE,
+    STALEMATE
 };
