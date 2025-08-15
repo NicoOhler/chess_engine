@@ -6,11 +6,11 @@
 using namespace BitBoard;
 using namespace std;
 
-class Game
+class Engine
 {
 public:
-    Game() = default;
-    ~Game() = default;
+    Engine() = default;
+    ~Engine() = default;
 
     bool history_enabled = true;
 

@@ -5,7 +5,7 @@
             "name": "UCI Mode",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/Game",
+            "program": "${workspaceFolder}/engine",
             "args": [
                 "-m",
                 "u"
@@ -29,7 +29,7 @@
             "name": "Play with Default Board",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/Game",
+            "program": "${workspaceFolder}/engine",
             "args": [
                 "-m",
                 "c"
@@ -53,7 +53,7 @@
             "name": "Play with Custom Board",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/Game",
+            "program": "${workspaceFolder}/engine",
             "args": [
                 "-m",
                 "c",
@@ -79,7 +79,7 @@
             "name": "Perft 5 w/ Divide",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/Game",
+            "program": "${workspaceFolder}/engine",
             "args": [
                 "-m",
                 "p",
@@ -106,7 +106,7 @@
             "name": "Perft 7 w/ Divide",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/Game",
+            "program": "${workspaceFolder}/engine",
             "args": [
                 "-m",
                 "p",
@@ -133,7 +133,7 @@
             "name": "Custom FEN Perft",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/Game",
+            "program": "${workspaceFolder}/engine",
             "args": [
                 "-m",
                 "p",

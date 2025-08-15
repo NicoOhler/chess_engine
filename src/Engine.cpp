@@ -1,6 +1,6 @@
 #include "Game.h"
 
-void Game::startConsoleGame(std::string FEN)
+void Engine::startConsoleGame(std::string FEN)
 {
     Board board = generateBoardFromFEN(FEN);
     if (history_enabled)
@@ -23,14 +23,14 @@ void Game::startConsoleGame(std::string FEN)
     std::cout << "GAME OVER" << std::endl;
 }
 
-void Game::applyMove(Board &board, Move move)
+void Engine::applyMove(Board &board, Move move)
 {
     move_generator.applyMove(board, move);
     if (history_enabled)
         addBoardToHistory(board);
 }
 
-Board Game::undoMove()
+Board Engine::undoMove()
 {
     assert(history_enabled, "History is not enabled");
     game_history = game_history->prev;
@@ -39,7 +39,7 @@ Board Game::undoMove()
     return game_history->board;
 }
 
-Move Game::getLegalMoveFromUser(MoveList legal_moves)
+Move Engine::getLegalMoveFromUser(MoveList legal_moves)
 {
     std::string input;
     while (true)
@@ -95,7 +95,7 @@ Move Game::getLegalMoveFromUser(MoveList legal_moves)
     }
 }
 
-Piece Game::getPromotionChoice()
+Piece Engine::getPromotionChoice()
 {
     std::cout << "Choose promotion piece: " << std::endl;
     std::cout << "Q - Queen" << std::endl;
@@ -113,7 +113,7 @@ Piece Game::getPromotionChoice()
     }
 }
 
-bool Game::isGameOver(Board &board, MoveList moves)
+bool Engine::isGameOver(Board &board, MoveList moves)
 {
     if (!moves.empty())
         return false;
@@ -123,7 +123,7 @@ bool Game::isGameOver(Board &board, MoveList moves)
     return true;
 }
 
-uint64 Game::startPerft(int depth, std::string FEN, bool divide, uint64 expected)
+uint64 Engine::startPerft(int depth, std::string FEN, bool divide, uint64 expected)
 {
     assert(depth >= 1 && depth <= 10, "Perft depth must be between 1 and 10");
     history_enabled = false;
@@ -142,7 +142,7 @@ uint64 Game::startPerft(int depth, std::string FEN, bool divide, uint64 expected
     return nodes;
 }
 
-void Game::startUCI()
+void Engine::startUCI()
 {
     std::cout << "ChessEngine started in UCI mode" << std::endl;
 
@@ -179,7 +179,7 @@ void Game::startUCI()
     }
 }
 
-uint64 Game::perft(int depth, Board board, bool divide)
+uint64 Engine::perft(int depth, Board board, bool divide)
 {
     // if (depth == 0)
     //     return 1;
@@ -200,7 +200,7 @@ uint64 Game::perft(int depth, Board board, bool divide)
     return total_nodes;
 }
 
-void Game::initializeGameHistory(Board board)
+void Engine::initializeGameHistory(Board board)
 {
     assert(game_history == nullptr, "Game history already initialized.");
     Board copy = board;
@@ -210,7 +210,7 @@ void Game::initializeGameHistory(Board board)
     game_history->prev = nullptr;
 }
 
-void Game::addBoardToHistory(Board board)
+void Engine::addBoardToHistory(Board board)
 {
     assert(game_history != nullptr, "Game history not initialized.");
     Node *new_node = new Node();
@@ -263,7 +263,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    Game game;
+    Engine game;
     switch (mode)
     {
     case M_UCI:
