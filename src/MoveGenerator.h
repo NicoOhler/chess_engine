@@ -16,11 +16,19 @@ struct Move
     Piece promotion;
     Bitboard castling;
 
+    // needed for unmake
+    Piece captured_piece;
+    Position previous_en_passant;
+    Bitboard previous_castling_rights;
+    Clock half_move_clock;
+
     bool operator==(const Move &rhs)
     {
-        return from == rhs.from && to == rhs.to && piece == rhs.piece; // piece is not necessary for move equality
+        return from == rhs.from && to == rhs.to && piece == rhs.piece;
     }
 };
+
+const Move UNDO_MOVE = Move{0, 0, UNDO, 0, 0, 0, 0, 0, 0};
 
 struct MoveList
 {
@@ -91,7 +99,8 @@ private:
 
 public:
     MoveGenerator();
-    void applyMove(Board &board, Move move);
+    void makeMove(Board &board, Move &move);
+    void unmakeMove(Board &board, Move move);
     MoveList generateLegalMoves(Board board);
     bool squaresThreatened(Board &board, Bitboard squares, bool opponent);
 };

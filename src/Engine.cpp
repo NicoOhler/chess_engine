@@ -2,9 +2,7 @@
 
 void Engine::startConsoleGame(std::string fen)
 {
-    history_enabled = true;
     Board board = generateBoardFromFEN(fen);
-    initializeGameHistory(board);
     log(CHESS_BOARD, "Initialized board with FEN: " + fen);
     printGameState(board);
     MoveList moves = move_generator.generateLegalMoves(board);
@@ -12,30 +10,11 @@ void Engine::startConsoleGame(std::string fen)
     do
     {
         Move move = getLegalMoveFromUser(moves);
-        if (move.piece == UNDO)
-            board = undoMove();
-        else
-            applyMove(board, move);
+        applyAndTrackMove(board, move);
         printGameState(board);
         moves = move_generator.generateLegalMoves(board);
     } while (getGameState(board, moves) == IN_PROGRESS);
-    std::cout << (getGameState(board, moves) == CHECKMATE ? "Checkmate" : "Stalemate") << std::endl;
-}
-
-void Engine::applyMove(Board &board, Move move)
-{
-    move_generator.applyMove(board, move);
-    if (history_enabled)
-        addBoardToHistory(board);
-}
-
-Board Engine::undoMove()
-{
-    assert(history_enabled, "History is not enabled");
-    game_history = game_history->prev;
-    delete game_history->next;
-    game_history->next = nullptr;
-    return game_history->board;
+    std::cout << (getGameState(board, moves) == CHECKMATE ? "Checkmate" : "Draw") << std::endl;
 }
 
 Move Engine::getLegalMoveFromUser(MoveList legal_moves)
@@ -64,9 +43,9 @@ Move Engine::getLegalMoveFromUser(MoveList legal_moves)
         // undo previous move
         if (input[0] == 'u')
         {
-            if (game_history->prev)
-                return Move{0, 0, UNDO};
-            std::cout << "No previous move to undo." << std::endl;
+            if (!move_history.empty())
+                return UNDO_MOVE;
+            std::cout << "No move to undo" << std::endl;
             continue;
         }
 
@@ -112,12 +91,26 @@ Piece Engine::getPromotionChoice()
     }
 }
 
+void Engine::applyAndTrackMove(Board &board, Move move)
+{
+    if (move.piece == UNDO)
+    {
+        assert(!move_history.empty(), "No move to undo");
+        move = move_history.top();
+        move_history.pop();
+        move_generator.unmakeMove(board, move);
+        return;
+    }
+    move_history.push(move);
+    move_generator.makeMove(board, move);
+}
+
 GameState Engine::getGameState(Board &board, MoveList moves)
 {
-    if (!moves.empty())
+    if (!moves.empty() && board.half_move_clock < HALF_MOVE_CLOCK_LIMIT)
         return IN_PROGRESS;
     Bitboard king = board.white_to_move ? board.white_king : board.black_king;
-    return move_generator.squaresThreatened(board, king, true) ? CHECKMATE : STALEMATE;
+    return move_generator.squaresThreatened(board, king, true) ? CHECKMATE : DRAW;
 }
 
 uint64 Engine::startPerft(int depth, std::string fen, bool divide, uint64 expected)
@@ -160,8 +153,6 @@ void Engine::startUCI()
             if (fen == "startpos")
                 fen = START_FEN;
             Board board = generateBoardFromFEN(fen);
-            if (history_enabled)
-                initializeGameHistory(board);
             log(CHESS_BOARD, "Initialized board with FEN: " + fen);
         }
         else if (command.substr(0, 4) == "go ")
@@ -186,35 +177,14 @@ uint64 Engine::perft(int depth, Board board, bool divide)
     uint64 total_nodes = 0;
     for (int i = 0; i < legal_moves.size; i++)
     {
-        Board board_copy = board;
-        applyMove(board_copy, legal_moves.moves[i]);
-        uint64 nodes = perft(depth - 1, board_copy);
+        move_generator.makeMove(board, legal_moves.moves[i]);
+        uint64 nodes = perft(depth - 1, board);
+        move_generator.unmakeMove(board, legal_moves.moves[i]);
         if (divide)
             log(PERFT, getSquareName(legal_moves.moves[i].from) + getSquareName(legal_moves.moves[i].to) + ": " + std::to_string(nodes));
         total_nodes += nodes;
     }
     return total_nodes;
-}
-
-void Engine::initializeGameHistory(Board board)
-{
-    assert(game_history == nullptr, "Game history already initialized.");
-    Board copy = board;
-    game_history = new Node();
-    game_history->board = copy;
-    game_history->next = nullptr;
-    game_history->prev = nullptr;
-}
-
-void Engine::addBoardToHistory(Board board)
-{
-    assert(game_history != nullptr, "Game history not initialized.");
-    Node *new_node = new Node();
-    new_node->board = board;
-    new_node->next = nullptr;
-    new_node->prev = game_history;
-    game_history->next = new_node;
-    game_history = new_node;
 }
 
 void Engine::testSearch(std::string fen)
@@ -232,7 +202,7 @@ void Engine::testSearch(std::string fen)
 Score Engine::search(Board board, int depth, Score alpha, Score beta)
 {
     // todo quiescence + iterative deepening
-    // immediately return evaluation for leaf nodes (max depth, stalemate or checkmate)
+    // immediately return evaluation for leaf nodes (max depth, draw, stalemate or checkmate)
     if (depth == 0)
         return evaluateBoard(board);
 
@@ -240,7 +210,7 @@ Score Engine::search(Board board, int depth, Score alpha, Score beta)
     GameState game_state = getGameState(board, legal_moves);
     if (game_state == CHECKMATE)
         return NEG_INFINITY;
-    if (game_state == STALEMATE)
+    if (game_state == DRAW)
         return 0;
 
     // evaluate moves until pruning possible
@@ -248,10 +218,10 @@ Score Engine::search(Board board, int depth, Score alpha, Score beta)
     for (int i = 0; i < legal_moves.size; i++)
     {
         Move move = legal_moves.moves[i];
-        Board board_copy = board;
-        applyMove(board_copy, move);
+        move_generator.makeMove(board, move);
         // alpha beta are swapped since the opponent tries to minimize our score
-        Score score = -search(board_copy, depth - 1, -beta, -alpha);
+        Score score = -search(board, depth - 1, -beta, -alpha);
+        move_generator.unmakeMove(board, move);
         if (score > max)
         {
             max = score;
@@ -284,11 +254,11 @@ void printHelp(std::string executable_name)
 
 int main(int argc, char *argv[])
 {
-    Engine engine;
-    engine.testSearch();
-    exit(0);
+    // Engine engine;
+    // engine.testSearch();
+    // exit(0);
 
-    /*
+    // Initialize engine parameters based on command line arguments
     Mode mode = M_UCI;
     std::string start_fen = START_FEN;
     int perft_depth = 0;
@@ -297,15 +267,15 @@ int main(int argc, char *argv[])
     for (int i = 1; i < argc; i++)
     {
         if (std::string(argv[i]) == "-m" && i + 1 < argc)
-        mode = argv[++i][0];
+            mode = argv[++i][0];
         else if (std::string(argv[i]) == "-f" && i + 1 < argc)
-        start_fen = argv[++i];
+            start_fen = argv[++i];
         else if (std::string(argv[i]) == "-p" && i + 1 < argc)
-        perft_depth = std::stoi(argv[++i]);
+            perft_depth = std::stoi(argv[++i]);
         else if (std::string(argv[i]) == "-e" && i + 1 < argc)
-        expected_perft = std::stoull(argv[++i]);
+            expected_perft = std::stoull(argv[++i]);
         else if (std::string(argv[i]) == "-d")
-        divide = true;
+            divide = true;
         else if (std::string(argv[i]) == "-h")
         {
             printHelp(argv[0]);
@@ -319,23 +289,23 @@ int main(int argc, char *argv[])
         }
     }
 
+    // start engine with given parameters
     Engine engine;
     switch (mode)
     {
-        case M_UCI:
+    case M_UCI:
         engine.startUCI();
         break;
-        case M_CONSOLE:
+    case M_CONSOLE:
         engine.startConsoleGame(start_fen);
         break;
-        case M_PERFT:
+    case M_PERFT:
         engine.startPerft(perft_depth, start_fen, divide, expected_perft);
         break;
-        default:
+    default:
         std::cout << "Invalid mode. Use 'u' for UCI, 'c' for console or 'p' for perft." << std::endl;
         exit(1);
         break;
     }
     exit(0);
-    */
 }

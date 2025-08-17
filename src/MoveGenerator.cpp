@@ -340,19 +340,19 @@ MoveList MoveGenerator::generateLegalMoves(Board board)
     // simulate each move and ensure king (of player making a move) is not in check
     for (int i = 0; i < pseudo_legal_moves.size; i++)
     {
-        Board board_copy = board;
         Move move = pseudo_legal_moves.moves[i];
-        applyMove(board_copy, move);
+        makeMove(board, move);
         // new position of king from side whose previous turn it was, has to be safe
-        Bitboard king = board.white_to_move ? board_copy.white_king : board_copy.black_king;
-
-        if (squaresThreatened(board_copy, king, false))
-            log(REMOVE_ILLEGAL_MOVES, "Removed illegal move from " + getSquareName(move.from) + " to " + getSquareName(move.to) + ".");
-        else
+        Bitboard king = board.white_to_move ? board.black_king : board.white_king;
+        bool king_is_safe = !squaresThreatened(board, king, false);
+        unmakeMove(board, move);
+        if (king_is_safe)
         {
             legal_moves.append(move);
             log(REMAINING_MOVES, "Found legal move from " + getSquareName(move.from) + " to " + getSquareName(move.to) + ".");
         }
+        else
+            log(REMOVE_ILLEGAL_MOVES, "Removed illegal move from " + getSquareName(move.from) + " to " + getSquareName(move.to) + ".");
     }
 
     return legal_moves;
@@ -383,7 +383,6 @@ void MoveGenerator::generateKingMoves(Board &board, MoveList &moves)
     while (attacks)
     {
         Position to = clearRightmostSetBit(attacks);
-        // ? is this check redundant?
         if (squaresThreatened(board, 1ULL << to, true))
             continue;
         moves.append(Move{from, to, piece});
@@ -622,17 +621,30 @@ bool MoveGenerator::squaresThreatened(Board &board, Bitboard squares, bool oppon
     return false;
 }
 
-void MoveGenerator::applyMove(Board &board, Move move)
+void MoveGenerator::makeMove(Board &board, Move &move)
 {
+    // store information needed for unmake before actually making the move
+    move.captured_piece = board.getPieceAt(move.to);
+    move.previous_en_passant = board.en_passant;
+    move.previous_castling_rights = board.castling_rights;
+    move.half_move_clock = board.half_move_clock;
+
     board.capturePiece(move.to);
     if (board.white_to_move ? move.piece == WHITE_PAWN : move.piece == BLACK_PAWN)
     {
+        board.half_move_clock = HALF_MOVE_CLOCK_RESET;
         if (move.to == board.en_passant)
+        {
             board.capturePiece(board.en_passant + (board.white_to_move ? ONE_ROW_DOWN : ONE_ROW_UP));
+            move.captured_piece = board.white_to_move ? BLACK_PAWN : WHITE_PAWN;
+        }
         detectDoublePawnPushForEnPassant(board, move);
     }
     else
         board.en_passant = NO_EN_PASSANT;
+
+    if (move.captured_piece != EMPTY)
+        board.half_move_clock = HALF_MOVE_CLOCK_RESET;
 
     // move piece <=> update moved piece, own pieces and occupied squares
     Bitboard *piece = board.getBitboardByPiece(move.piece);
@@ -648,6 +660,46 @@ void MoveGenerator::applyMove(Board &board, Move move)
         BitBoard::set(*board.getBitboardByPiece(move.promotion), move.to);
     }
     board.white_to_move = !board.white_to_move;
+    board.half_move_clock++;
+}
+
+void MoveGenerator::unmakeMove(Board &board, Move move)
+{
+    // ? en passant restore piece + undo promotion
+    board.white_to_move = !board.white_to_move;
+    board.half_move_clock = move.half_move_clock;
+    board.castling_rights = move.previous_castling_rights;
+    board.en_passant = move.previous_en_passant;
+
+    Bitboard *piece = board.getBitboardByPiece(move.piece);
+    Bitboard *own_pieces = board.white_to_move ? &board.white_pieces : &board.black_pieces;
+
+    // replace promoted piece with pawn
+    if (move.promotion)
+    {
+        Bitboard *promoted_piece = board.getBitboardByPiece(move.promotion);
+        BitBoard::clear(*promoted_piece, move.to);
+        BitBoard::set(*piece, move.to);
+    }
+
+    // move piece
+    BitBoard::movePiece(*piece, move.to, move.from);
+    BitBoard::movePiece(*own_pieces, move.to, move.from);
+    BitBoard::movePiece(board.occupied, move.to, move.from);
+
+    // place captured piece at its original position (to or en_passant)
+    if (move.captured_piece != EMPTY)
+    {
+        Bitboard *captured_piece = board.getBitboardByPiece(move.captured_piece);
+        Bitboard *enemy_pieces = board.white_to_move ? &board.black_pieces : &board.white_pieces;
+        Position position = move.to;
+        bool en_passant_move = (move.to == board.en_passant) && (move.piece == (board.white_to_move ? WHITE_PAWN : BLACK_PAWN));
+        if (en_passant_move)
+            position += (board.white_to_move ? ONE_ROW_DOWN : ONE_ROW_UP);
+        BitBoard::set(*captured_piece, position);
+        BitBoard::set(*enemy_pieces, position);
+        BitBoard::set(board.occupied, position);
+    }
 }
 
 void MoveGenerator::handleCastling(Board &board, Move &move)
@@ -675,7 +727,7 @@ void MoveGenerator::handleCastling(Board &board, Move &move)
         rook_from += queen_side_castling ? 4 * ONE_COL_LEFT : 3 * ONE_COL_RIGHT;
         rook_to += queen_side_castling ? ONE_COL_LEFT : ONE_COL_RIGHT;
 
-        // update rook position, king already updated by applyMove
+        // update rook position, king already updated by makeMove
         BitBoard::movePiece(*own_rooks, rook_from, rook_to);
         BitBoard::movePiece(*own_pieces, rook_from, rook_to);
         BitBoard::movePiece(*occupied, rook_from, rook_to);

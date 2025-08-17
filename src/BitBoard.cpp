@@ -62,7 +62,7 @@ Position BitBoard::getRightmostSetBit(Bitboard &board)
     return __builtin_ctzll(board);
 }
 
-BitBoard::Board BitBoard::generateBoardFromFEN(std::string FEN)
+BitBoard::Board BitBoard::generateBoardFromFEN(std::string fen)
 {
     Board board = Board(EMPTY);
 
@@ -73,7 +73,7 @@ BitBoard::Board BitBoard::generateBoardFromFEN(std::string FEN)
         for (int col = COL_A; col <= COL_H; col++)
         {
             Position square = 8 * row + col;
-            char c = FEN[i++];
+            char c = fen[i++];
 
             if (c >= '1' && c <= '8')
             {
@@ -86,13 +86,12 @@ BitBoard::Board BitBoard::generateBoardFromFEN(std::string FEN)
             BitBoard::set(board.occupied, square);
             BitBoard::set(isupper(c) ? board.white_pieces : board.black_pieces, square);
         }
-        assert(FEN[i++] == (row != ROW_1 ? '/' : ' '), "Invalid FEN");
+        assert(fen[i++] == (row != ROW_1 ? '/' : ' '), "Invalid FEN");
     }
 
     // parse side to move, castling rights, en passant square
-    board.white_to_move = FEN[i++] == 'w';
-    assert(FEN[i++] == ' ', "Invalid FEN");
-    if (FEN[i] == '-')
+    board.white_to_move = fen[i++] == 'w';
+    if (fen[++i] == '-')
     {
         board.castling_rights = 0;
         i++;
@@ -100,9 +99,9 @@ BitBoard::Board BitBoard::generateBoardFromFEN(std::string FEN)
     else
         for (int j = 0; j < 4; j++)
         {
-            if (FEN[i] == ' ')
+            if (fen[i] == ' ')
                 break;
-            switch (FEN[i++])
+            switch (fen[i++])
             {
             case WHITE_KING:
                 board.castling_rights |= WHITE_KING_SIDE_CASTLING;
@@ -121,20 +120,34 @@ BitBoard::Board BitBoard::generateBoardFromFEN(std::string FEN)
             }
         }
 
-    assert(FEN[i++] == ' ', "Invalid FEN");
-    if (FEN[i] == '-')
+    assert(fen[i++] == ' ', "Invalid FEN");
+    bool no_en_passant = fen[i] == '-';
+    if (no_en_passant)
         board.en_passant = NO_EN_PASSANT;
     else
-    {
-        std::string square = FEN.substr(i, 2);
-        board.en_passant = getSquareIndex(square);
-        i += 2;
-    }
-    // ignore halfmove clock and fullmove number for now
+        board.en_passant = getSquareIndex(fen.substr(i, 2));
+    i += no_en_passant ? 2 : 3;
+
+    // parse half move clock
+    bool two_digits = fen[i + 1] != ' ';
+    if (two_digits)
+        board.half_move_clock = (fen[i++] - '0') * 10 + (fen[i++] - '0');
+    else
+        board.half_move_clock = fen[i++] - '0';
+
+    // ? is the full move number needed for anything?
+    /*
+    i++;
+    two_digits = fen.length() != i + 1;
+    if (two_digits)
+    board.full_move_number = (fen[i++] - '0') * 10 + (fen[i++] - '0');
+    else
+    board.full_move_number = fen[i] - '0';
+    */
     return board;
 }
 
-Bitboard *BitBoard::Board::getBitboardByPiece(char piece)
+Bitboard *BitBoard::Board::getBitboardByPiece(Piece piece)
 {
     switch (piece)
     {
@@ -168,6 +181,36 @@ Bitboard *BitBoard::Board::getBitboardByPiece(char piece)
     return nullptr;
 }
 
+Piece BitBoard::Board::getPieceAt(Position position)
+{
+    Bitboard mask = 1ULL << position;
+    if (white_pawns & mask)
+        return WHITE_PAWN;
+    if (white_rooks & mask)
+        return WHITE_ROOK;
+    if (white_knights & mask)
+        return WHITE_KNIGHT;
+    if (white_bishops & mask)
+        return WHITE_BISHOP;
+    if (white_queens & mask)
+        return WHITE_QUEEN;
+    if (white_king & mask)
+        return WHITE_KING;
+    if (black_pawns & mask)
+        return BLACK_PAWN;
+    if (black_rooks & mask)
+        return BLACK_ROOK;
+    if (black_knights & mask)
+        return BLACK_KNIGHT;
+    if (black_bishops & mask)
+        return BLACK_BISHOP;
+    if (black_queens & mask)
+        return BLACK_QUEEN;
+    if (black_king & mask)
+        return BLACK_KING;
+    return EMPTY;
+}
+
 void BitBoard::Board::capturePiece(Position position)
 {
     clear(white_to_move ? black_pieces : white_pieces, position);
@@ -184,6 +227,7 @@ void BitBoard::printGameState(Board board)
     printBoard(board);
     if (board.en_passant != NO_EN_PASSANT)
         std::cout << "En passant square: " << getSquareName(board.en_passant) << std::endl;
+    std::cout << "Half move counter: " << std::to_string(board.half_move_clock) << std::endl;
     printCastlingRights(board);
     std::cout << (board.white_to_move ? "White" : "Black") << "'s turn" << std::endl
               << std::endl;

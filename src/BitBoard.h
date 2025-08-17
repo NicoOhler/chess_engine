@@ -51,17 +51,16 @@ namespace BitBoard
                   black_pawns(BLACK_PAWNS_START), black_rooks(BLACK_ROOKS_START), black_knights(BLACK_KNIGHTS_START),
                   black_bishops(BLACK_BISHOPS_START), black_queens(BLACK_QUEENS_START), black_king(BLACK_KING_START),
                   white_pieces(WHITE_PIECES), black_pieces(BLACK_PIECES), en_passant(NO_EN_PASSANT),
-                  castling_rights(WHITE_CASTLING | BLACK_CASTLING), occupied(WHITE_PIECES | BLACK_PIECES) {}
+                  castling_rights(WHITE_CASTLING | BLACK_CASTLING), occupied(WHITE_PIECES | BLACK_PIECES), half_move_clock(0) {}
         Board(Piece empty) : white_to_move(true),
                              white_pawns(0), white_rooks(0), white_knights(0),
                              white_bishops(0), white_queens(0), white_king(0),
                              black_pawns(0), black_rooks(0), black_knights(0),
                              black_bishops(0), black_queens(0), black_king(0),
                              white_pieces(0), black_pieces(0), en_passant(NO_EN_PASSANT),
-                             castling_rights(0), occupied(0) {}
-        // todo merge white_to_move and castling_rights into one bitboard
+                             castling_rights(0), occupied(0), half_move_clock(0) {}
+        // ? maybe merge white_to_move and castling_rights into one bitboard
         bool white_to_move;
-        // todo make bitboards iterable with pointers next to each other
         Bitboard white_pawns;
         Bitboard white_rooks;
         Bitboard white_knights;
@@ -81,16 +80,11 @@ namespace BitBoard
         Bitboard black_pieces;
         Position en_passant;
         Bitboard castling_rights;
+        Clock half_move_clock;
 
-        Bitboard *getBitboardByPiece(char piece);
+        Bitboard *getBitboardByPiece(Piece piece);
+        Piece getPieceAt(Position position);
         void capturePiece(Position position);
-    };
-
-    struct Node // represents a game state in a double linked list of game states
-    {
-        Board board;
-        struct Node *next;
-        struct Node *prev;
     };
 
     void movePiece(Bitboard &board, Position from, Position to);
@@ -102,7 +96,7 @@ namespace BitBoard
     int8 countSetBits(Bitboard board);
     Position clearRightmostSetBit(Bitboard &board); // sets the rightmost set bit to 0 and returns its index
     Position getRightmostSetBit(Bitboard &board);
-    Board generateBoardFromFEN(std::string FEN);
+    Board generateBoardFromFEN(std::string fen);
 
     // print board
     void printGameState(Board board);
