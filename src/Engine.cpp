@@ -10,6 +10,8 @@ void Engine::startConsoleGame(std::string fen)
     do
     {
         Move move = getLegalMoveFromUser(moves);
+        if (move.promotion)
+            move.promotion = board.white_to_move ? toupper(move.promotion) : tolower(move.promotion);
         applyAndTrackMove(board, move);
         printGameState(board);
         moves = move_generator.generateLegalMoves(board);
