@@ -18,7 +18,7 @@ const Position NUM_SQUARES = 64;
 const Position NUM_ROWS = 8;
 const Position NUM_COLS = 8;
 const std::string START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-const int MAX_MOVES = 256;
+const int MAX_MOVES = 200;
 const Score POS_INFINITY = 2147483647;
 const Score NEG_INFINITY = -2147483648;
 const Clock HALF_MOVE_CLOCK_RESET = -1;
@@ -33,6 +33,13 @@ const Position ONE_ROW_UP_ONE_COL_LEFT = 7;
 const Position ONE_ROW_UP_ONE_COL_RIGHT = 9;
 const Position ONE_ROW_DOWN_ONE_COL_LEFT = -9;
 const Position ONE_ROW_DOWN_ONE_COL_RIGHT = -7;
+
+const Score PAWN_VALUE = 100;
+const Score KNIGHT_VALUE = 300;
+const Score BISHOP_VALUE = 330;
+const Score ROOK_VALUE = 500;
+const Score QUEEN_VALUE = 900;
+const Score KING_VALUE = 20000;
 
 enum PIECES
 {

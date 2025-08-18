@@ -16,6 +16,27 @@ Position getSquareIndex(std::string square)
     return 8 * (row - '1') + (col - 'a');
 }
 
+Score getPieceValue(Piece piece)
+{
+    switch (toupper(piece))
+    {
+    case WHITE_PAWN:
+        return PAWN_VALUE;
+    case WHITE_KNIGHT:
+        return KNIGHT_VALUE;
+    case WHITE_BISHOP:
+        return BISHOP_VALUE;
+    case WHITE_ROOK:
+        return ROOK_VALUE;
+    case WHITE_QUEEN:
+        return QUEEN_VALUE;
+    case WHITE_KING:
+        return KING_VALUE;
+    default:
+        return 0;
+    }
+}
+
 uint64 getCurrentTimeMilliseconds()
 {
     return std::chrono::duration_cast<std::chrono::milliseconds>(

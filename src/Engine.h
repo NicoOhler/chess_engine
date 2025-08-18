@@ -28,8 +28,9 @@ private:
     std::stack<Move> move_history;
     MoveGenerator move_generator;
 
-    void orderMoves(MoveList &moves, Board &board);
-    Score search(Board board, int depth, Score alpha, Score beta);
+    void calculateMoveScores(MoveList &moves, Board &board);
+    Move pickBestMove(MoveList &moves);
+    Score search(Board board, int depth, Score alpha, Score beta, bool root = false);
     Move getLegalMoveFromUser(MoveList legal_moves);
     void applyAndTrackMove(Board &board, Move move);
     Piece getPromotionChoice();

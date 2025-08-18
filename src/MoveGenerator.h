@@ -51,6 +51,7 @@ const Move NULL_MOVE = UNDO_MOVE;
 struct MoveList
 {
     Move moves[MAX_MOVES];
+    Score scores[MAX_MOVES];
     int size = 0;
 
     void append(Move move)

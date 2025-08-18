@@ -13,5 +13,6 @@
 
 std::string getSquareName(Position square);
 Position getSquareIndex(std::string square);
+Score getPieceValue(Piece piece);
 uint64 getCurrentTimeMilliseconds();
 std::string convertMillisecondsToString(uint64 milliseconds);

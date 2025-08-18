@@ -209,30 +209,53 @@ void Engine::iterativeDeepening(Board &board, int max_depth)
 
     for (int depth = 1; depth <= max_depth; depth++)
     {
-        best_score = search(board, depth, NEG_INFINITY, POS_INFINITY);
+        best_score = search(board, depth, NEG_INFINITY, POS_INFINITY, true);
         log(ITERATIVE_DEEPENING, "Depth " + std::to_string(depth) + " best move " + best_move.toString() +
                                      " score " + std::to_string(best_score));
     }
 }
 
-void Engine::orderMoves(MoveList &moves, Board &board)
+void Engine::calculateMoveScores(MoveList &moves, Board &board)
 {
-    // move previous best to front of list
-    if (best_move != NULL_MOVE)
-        for (int i = 0; i < moves.size; i++)
-            if (moves.moves[i] == best_move)
-            {
-                std::swap(moves.moves[0], moves.moves[i]);
-                break;
-            }
+    for (int i = 0; i < moves.size; i++)
+    {
+        Move move = moves.moves[i];
+        // search previously best move first
+        if (move == best_move)
+            moves.scores[i] = POS_INFINITY;
 
-    // todo sort remaining moves according to heuristics:
-    // Most Valuable Victim – Least Valuable Attacker is apparently pretty important
-    // killer moves, ... less important
+        // Most Valuable Victim – Least Valuable Aggressor
+        // i.e., prioritize captures of high value with low value pieces
+        else if (move.captured_piece != EMPTY)
+            moves.scores[i] = getPieceValue(move.captured_piece) - getPieceValue(move.piece) + 10000;
+
+        // todo add killer moves, history later on
+        else
+            moves.scores[i] = 0;
+    }
+}
+
+Move Engine::pickBestMove(MoveList &moves)
+{
+    int best_move_index = -1;
+    Score best_score = NEG_INFINITY;
+
+    for (int i = 0; i < moves.size; i++)
+        if (moves.scores[i] > best_score)
+        {
+            best_score = moves.scores[i];
+            best_move_index = i;
+        }
+
+    // mark selected move as used => ensure it is not picked again
+    if (best_move_index != -1)
+        moves.scores[best_move_index] = NEG_INFINITY;
+
+    return moves.moves[best_move_index];
 }
 
 // negamax with alpha beta pruning and quiescence
-Score Engine::search(Board board, int depth, Score alpha, Score beta)
+Score Engine::search(Board board, int depth, Score alpha, Score beta, bool root)
 {
     // todo quiescence + iterative deepening
     // immediately return evaluation for leaf nodes (max depth, draw, stalemate or checkmate)
@@ -241,18 +264,18 @@ Score Engine::search(Board board, int depth, Score alpha, Score beta)
 
     MoveList legal_moves = move_generator.generateLegalMoves(board);
     GameState game_state = getGameState(board, legal_moves);
-    if (game_state != IN_PROGRESS)
-    {
-        counter++;
-        return game_state == CHECKMATE ? NEG_INFINITY : 0;
-    }
+    if (game_state == CHECKMATE)
+        return NEG_INFINITY; // todo add ply to prefer slow losses
+    if (game_state == DRAW)
+        return 0;
 
     // evaluate moves until pruning possible
-    orderMoves(legal_moves, board);
+    calculateMoveScores(legal_moves, board);
     Score max = NEG_INFINITY;
     for (int i = 0; i < legal_moves.size; i++)
     {
-        Move move = legal_moves.moves[i];
+        // Move move = legal_moves.moves[i];
+        Move move = pickBestMove(legal_moves);
         move_generator.makeMove(board, move);
         // alpha beta are swapped since the opponent tries to minimize our score
         Score score = -search(board, depth - 1, -beta, -alpha);
@@ -261,11 +284,10 @@ Score Engine::search(Board board, int depth, Score alpha, Score beta)
         {
             max = score;
             if (score > alpha)
-                alpha = score;
-            if (score > best_score)
             {
-                best_move = move;
-                best_score = score;
+                alpha = score;
+                if (root)
+                    best_move = move;
             }
         }
         // prune since score of current subtree is already worse than beta
@@ -280,7 +302,26 @@ Score Engine::search(Board board, int depth, Score alpha, Score beta)
 Score Engine::evaluateBoard(Board board)
 {
     counter++;
-    return rand() % 100;
+    Score material = 0;
+    material += countSetBits(board.white_pawns) * PAWN_VALUE;
+    material += countSetBits(board.white_knights) * KNIGHT_VALUE;
+    material += countSetBits(board.white_bishops) * BISHOP_VALUE;
+    material += countSetBits(board.white_rooks) * ROOK_VALUE;
+    material += countSetBits(board.white_queens) * QUEEN_VALUE;
+    material += countSetBits(board.white_king) * KING_VALUE;
+
+    material -= countSetBits(board.black_pawns) * PAWN_VALUE;
+    material -= countSetBits(board.black_knights) * KNIGHT_VALUE;
+    material -= countSetBits(board.black_bishops) * BISHOP_VALUE;
+    material -= countSetBits(board.black_rooks) * ROOK_VALUE;
+    material -= countSetBits(board.black_queens) * QUEEN_VALUE;
+    material -= countSetBits(board.black_king) * KING_VALUE;
+
+    Score score = material;
+    // return score from perspective of current player
+    if (!board.white_to_move)
+        score = -score;
+    return score;
 }
 
 void printHelp(std::string executable_name)
