@@ -84,7 +84,6 @@ namespace BitBoard
 
         Bitboard *getBitboardByPiece(Piece piece);
         Piece getPieceAt(Position position);
-        void capturePiece(Position position);
     };
 
     void movePiece(Bitboard &board, Position from, Position to);

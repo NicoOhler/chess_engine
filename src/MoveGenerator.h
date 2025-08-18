@@ -26,9 +26,27 @@ struct Move
     {
         return from == rhs.from && to == rhs.to && piece == rhs.piece;
     }
+
+    bool operator!=(const Move &rhs)
+    {
+        return from != rhs.from || to != rhs.to || piece != rhs.piece;
+    }
+
+    std::string toString() const
+    {
+        std::string result;
+        result += getSquareName(from);
+        result += getSquareName(to);
+        if (promotion)
+            result += promotion;
+        if (castling)
+            result += castling == WHITE_KING_SIDE_CASTLING || castling == BLACK_KING_SIDE_CASTLING ? "O-O" : "O-O-O";
+        return result;
+    }
 };
 
 const Move UNDO_MOVE = Move{0, 0, UNDO, 0, 0, 0, 0, 0, 0};
+const Move NULL_MOVE = UNDO_MOVE;
 
 struct MoveList
 {

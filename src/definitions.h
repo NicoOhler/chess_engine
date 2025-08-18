@@ -80,7 +80,8 @@ enum MODES
 {
     M_UCI = 'u',
     M_CONSOLE = 'c',
-    M_PERFT = 'p'
+    M_PERFT = 'p',
+    M_SEARCH = 's'
 };
 
 enum GAME_STATE

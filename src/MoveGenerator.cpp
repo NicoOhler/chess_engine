@@ -169,7 +169,7 @@ void MoveGenerator::addPawnMoveWithPossiblePromotion(Board &board, MoveList &mov
     if (move.to >= ONE_ROW_UP && move.to < NUM_SQUARES + ONE_ROW_DOWN)
     {
         moves.append(move);
-        log(PAWN_MOVE, "Found pawn move from " + getSquareName(move.from) + " to " + getSquareName(move.to) + ".");
+        // log(PAWN_MOVE, "Found pawn move from " + getSquareName(move.from) + " to " + getSquareName(move.to) + ".");
         return;
     }
 
@@ -183,7 +183,7 @@ void MoveGenerator::addPawnMoveWithPossiblePromotion(Board &board, MoveList &mov
     moves.append(move);
     move.promotion = white_to_move ? WHITE_KNIGHT : BLACK_KNIGHT;
     moves.append(move);
-    log(PAWN_MOVE, "Found pawn promotion from " + getSquareName(move.from) + " to " + getSquareName(move.to) + ".");
+    // log(PAWN_MOVE, "Found pawn promotion from " + getSquareName(move.from) + " to " + getSquareName(move.to) + ".");
 }
 
 void MoveGenerator::addCastlingMoves(Board &board, MoveList &moves)
@@ -199,7 +199,7 @@ void MoveGenerator::addCastlingMoves(Board &board, MoveList &moves)
         {
             Position to = king_start + ONE_COL_RIGHT * 2;
             moves.append(Move{king_start, to, piece, 0, king_side_castling});
-            log(KING_MOVE, "Found king side castling from " + getSquareName(king_start) + " to " + getSquareName(to) + ".");
+            // log(KING_MOVE, "Found king side castling from " + getSquareName(king_start) + " to " + getSquareName(to) + ".");
         }
     }
 
@@ -213,7 +213,7 @@ void MoveGenerator::addCastlingMoves(Board &board, MoveList &moves)
         {
             Position to = king_start + ONE_COL_LEFT * 2;
             moves.append(Move{king_start, to, piece, 0, queen_side_castling});
-            log(KING_MOVE, "Found queen side castling from " + getSquareName(king_start) + " to " + getSquareName(to) + ".");
+            // log(KING_MOVE, "Found queen side castling from " + getSquareName(king_start) + " to " + getSquareName(to) + ".");
         }
     }
 }
@@ -347,12 +347,10 @@ MoveList MoveGenerator::generateLegalMoves(Board board)
         bool king_is_safe = !squaresThreatened(board, king, false);
         unmakeMove(board, move);
         if (king_is_safe)
-        {
             legal_moves.append(move);
-            log(REMAINING_MOVES, "Found legal move from " + getSquareName(move.from) + " to " + getSquareName(move.to) + ".");
-        }
-        else
-            log(REMOVE_ILLEGAL_MOVES, "Removed illegal move from " + getSquareName(move.from) + " to " + getSquareName(move.to) + ".");
+        // log(REMAINING_MOVES, "Found legal move from " + getSquareName(move.from) + " to " + getSquareName(move.to) + ".");
+        // else
+        //  log(REMOVE_ILLEGAL_MOVES, "Removed illegal move from " + getSquareName(move.from) + " to " + getSquareName(move.to) + ".");
     }
 
     return legal_moves;
@@ -386,7 +384,7 @@ void MoveGenerator::generateKingMoves(Board &board, MoveList &moves)
         if (squaresThreatened(board, 1ULL << to, true))
             continue;
         moves.append(Move{from, to, piece});
-        log(KING_MOVE, "Found king move from " + getSquareName(from) + " to " + getSquareName(to) + ".");
+        // log(KING_MOVE, "Found king move from " + getSquareName(from) + " to " + getSquareName(to) + ".");
     }
 
     // castling moves
@@ -428,7 +426,7 @@ void MoveGenerator::generatePawnMoves(Board &board, MoveList &moves)
         Position to = clearRightmostSetBit(double_moves);
         Position from = to - 2 * direction;
         moves.append(Move{from, to, piece});
-        log(PAWN_MOVE, "Found pawn move from " + getSquareName(from) + " to " + getSquareName(to) + ".");
+        // log(PAWN_MOVE, "Found pawn move from " + getSquareName(from) + " to " + getSquareName(to) + ".");
     }
 
     // for each pawn check attack masks
@@ -445,7 +443,7 @@ void MoveGenerator::generatePawnMoves(Board &board, MoveList &moves)
         else if (en_passant_right)
         {
             moves.append(Move{from, to_right, piece});
-            log(PAWN_MOVE, "Found en passant move from " + getSquareName(from) + " to " + getSquareName(to_right) + ".");
+            // log(PAWN_MOVE, "Found en passant move from " + getSquareName(from) + " to " + getSquareName(to_right) + ".");
         }
 
         // attack left
@@ -457,7 +455,7 @@ void MoveGenerator::generatePawnMoves(Board &board, MoveList &moves)
         else if (en_passant_left)
         {
             moves.append(Move{from, to_left, piece});
-            log(PAWN_MOVE, "Found en passant move from " + getSquareName(from) + " to " + getSquareName(to_left) + ".");
+            // log(PAWN_MOVE, "Found en passant move from " + getSquareName(from) + " to " + getSquareName(to_left) + ".");
         }
     }
 }
@@ -478,7 +476,7 @@ void MoveGenerator::generateKnightMoves(Board &board, MoveList &moves)
         {
             Position to = clearRightmostSetBit(attacks);
             moves.append(Move{square, to, piece});
-            log(KNIGHT_MOVE, "Found knight move from " + getSquareName(square) + " to " + getSquareName(to) + ".");
+            // log(KNIGHT_MOVE, "Found knight move from " + getSquareName(square) + " to " + getSquareName(to) + ".");
         }
     }
 }
@@ -502,7 +500,7 @@ void MoveGenerator::generateBishopMoves(Board &board, MoveList &moves)
         {
             Position to = clearRightmostSetBit(attacks);
             moves.append(Move{square, to, piece});
-            log(BISHOP_MOVE, "Found bishop move from " + getSquareName(square) + " to " + getSquareName(to) + ".");
+            // log(BISHOP_MOVE, "Found bishop move from " + getSquareName(square) + " to " + getSquareName(to) + ".");
         }
     }
 }
@@ -524,7 +522,7 @@ void MoveGenerator::generateRookMoves(Board &board, MoveList &moves)
         {
             Position to = clearRightmostSetBit(attacks);
             moves.append(Move{square, to, piece});
-            log(ROOK_MOVE, "Found rook move from " + getSquareName(square) + " to " + getSquareName(to) + ".");
+            // log(ROOK_MOVE, "Found rook move from " + getSquareName(square) + " to " + getSquareName(to) + ".");
         }
     }
 }
@@ -548,7 +546,7 @@ void MoveGenerator::generateQueenMoves(Board &board, MoveList &moves)
         {
             Position to = clearRightmostSetBit(attacks);
             moves.append(Move{square, to, piece});
-            log(QUEEN_MOVE, "Found queen move from " + getSquareName(square) + " to " + getSquareName(to) + ".");
+            // log(QUEEN_MOVE, "Found queen move from " + getSquareName(square) + " to " + getSquareName(to) + ".");
         }
     }
 }

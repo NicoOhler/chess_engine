@@ -13,7 +13,7 @@ const LogType LOG_TYPE_ENABLED = 0x1;
 const LogType WHITE = 0x2; // ? color logging
 
 const LogType CHESS_BOARD = WHITE | LOG_TYPE_ENABLED;
-const LogType MOVE_GENERATOR = WHITE | LOG_TYPE_ENABLED;
+const LogType MOVE_GENERATOR = WHITE;
 const LogType PAWN_MOVE = WHITE;
 const LogType KNIGHT_MOVE = WHITE;
 const LogType BISHOP_MOVE = WHITE;
@@ -23,6 +23,7 @@ const LogType KING_MOVE = WHITE;
 const LogType REMOVE_ILLEGAL_MOVES = WHITE;
 const LogType REMAINING_MOVES = WHITE;
 const LogType PERFT = WHITE | LOG_TYPE_ENABLED;
+const LogType ITERATIVE_DEEPENING = WHITE | LOG_TYPE_ENABLED;
 
 void log(LogType logType, std::string message);
 

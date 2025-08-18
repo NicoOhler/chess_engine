@@ -189,17 +189,46 @@ uint64 Engine::perft(int depth, Board board, bool divide)
     return total_nodes;
 }
 
-void Engine::testSearch(int depth, std::string fen)
+void Engine::startSearch(int depth, std::string fen)
 {
     Board board = generateBoardFromFEN(fen);
     log(CHESS_BOARD, "Testing search with FEN: " + fen);
     counter = 0;
     uint64 start_time = getCurrentTimeMilliseconds();
-    Score score = search(board, depth, NEG_INFINITY, POS_INFINITY);
+    iterativeDeepening(board, depth);
     uint64 end_time = getCurrentTimeMilliseconds();
-    log(PERFT, "Search score: " + std::to_string(score));
+    log(PERFT, "Search score: " + std::to_string(best_score));
     log(PERFT, "Evaluated nodes: " + std::to_string(counter));
     log(PERFT, "Time taken: " + convertMillisecondsToString(end_time - start_time));
+}
+
+void Engine::iterativeDeepening(Board &board, int max_depth)
+{
+    best_score = 0;
+    best_move = NULL_MOVE; // no previous best move for depth 1
+
+    for (int depth = 1; depth <= max_depth; depth++)
+    {
+        best_score = search(board, depth, NEG_INFINITY, POS_INFINITY);
+        log(ITERATIVE_DEEPENING, "Depth " + std::to_string(depth) + " best move " + best_move.toString() +
+                                     " score " + std::to_string(best_score));
+    }
+}
+
+void Engine::orderMoves(MoveList &moves, Board &board)
+{
+    // move previous best to front of list
+    if (best_move != NULL_MOVE)
+        for (int i = 0; i < moves.size; i++)
+            if (moves.moves[i] == best_move)
+            {
+                std::swap(moves.moves[0], moves.moves[i]);
+                break;
+            }
+
+    // todo sort remaining moves according to heuristics:
+    // Most Valuable Victim – Least Valuable Attacker is apparently pretty important
+    // killer moves, ... less important
 }
 
 // negamax with alpha beta pruning and quiescence
@@ -212,12 +241,14 @@ Score Engine::search(Board board, int depth, Score alpha, Score beta)
 
     MoveList legal_moves = move_generator.generateLegalMoves(board);
     GameState game_state = getGameState(board, legal_moves);
-    if (game_state == CHECKMATE)
-        return NEG_INFINITY;
-    if (game_state == DRAW)
-        return 0;
+    if (game_state != IN_PROGRESS)
+    {
+        counter++;
+        return game_state == CHECKMATE ? NEG_INFINITY : 0;
+    }
 
     // evaluate moves until pruning possible
+    orderMoves(legal_moves, board);
     Score max = NEG_INFINITY;
     for (int i = 0; i < legal_moves.size; i++)
     {
@@ -231,6 +262,11 @@ Score Engine::search(Board board, int depth, Score alpha, Score beta)
             max = score;
             if (score > alpha)
                 alpha = score;
+            if (score > best_score)
+            {
+                best_move = move;
+                best_score = score;
+            }
         }
         // prune since score of current subtree is already worse than beta
         // beta = value of the best move found so far by the parent
@@ -249,25 +285,20 @@ Score Engine::evaluateBoard(Board board)
 
 void printHelp(std::string executable_name)
 {
-    std::cout << "Usage: " << executable_name << " [-m mode] [-f FEN] [-p depth] [-d] [-h]\n"
+    std::cout << "Usage: " << executable_name << " [-m mode] [-f FEN] [-p ply] [-d] [-h]\n"
               << "  -m mode: Set the engine mode (u for UCI, c for console, p for perft)\n"
               << "  -f FEN: Start the game with the given FEN string\n"
-              << "  -p depth: Run perft with the given depth\n"
+              << "  -p ply: Run perft/search with the given ply/depth/number of half moves)\n"
               << "  -d: Divide perft results\n"
               << "  -h: Show this help message" << std::endl;
 }
 
 int main(int argc, char *argv[])
 {
-    /*
-    Engine engine;
-    engine.testSearch(4, "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - ");
-    exit(0);
-    */
     // Initialize engine parameters based on command line arguments
     Mode mode = M_UCI;
     std::string start_fen = START_FEN;
-    int perft_depth = 0;
+    int depth = 0;
     bool divide = false;
     int expected_perft = 0;
     for (int i = 1; i < argc; i++)
@@ -277,7 +308,7 @@ int main(int argc, char *argv[])
         else if (std::string(argv[i]) == "-f" && i + 1 < argc)
             start_fen = argv[++i];
         else if (std::string(argv[i]) == "-p" && i + 1 < argc)
-            perft_depth = std::stoi(argv[++i]);
+            depth = std::stoi(argv[++i]);
         else if (std::string(argv[i]) == "-e" && i + 1 < argc)
             expected_perft = std::stoull(argv[++i]);
         else if (std::string(argv[i]) == "-d")
@@ -306,7 +337,10 @@ int main(int argc, char *argv[])
         engine.startConsoleGame(start_fen);
         break;
     case M_PERFT:
-        engine.startPerft(perft_depth, start_fen, divide, expected_perft);
+        engine.startPerft(depth, start_fen, divide, expected_perft);
+        break;
+    case M_SEARCH:
+        engine.startSearch(depth, start_fen);
         break;
     default:
         std::cout << "Invalid mode. Use 'u' for UCI, 'c' for console or 'p' for perft." << std::endl;
