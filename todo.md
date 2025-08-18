@@ -1,9 +1,12 @@
 ### TODO
 + build rudimentary evaluation function
-+ half move clock
 + connect engine to GUI via UCI
-+ copying the board is slow => unmake
-+ do optimizations (iterative deepening, move ordering, transposition tables, ...)
++ optimizations 
+    + keep track of attacked squares instead of checking king safety
+    + iterative deepening
+    + move ordering
+    + transposition tables
 + quiescence
++ play probabilistic book moves at first
 + mby multithreaded
 + train NNUE

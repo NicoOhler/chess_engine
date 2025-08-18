@@ -120,11 +120,11 @@ uint64 Engine::startPerft(int depth, std::string fen, bool divide, uint64 expect
     assert(depth >= 1 && depth <= 10, "Perft depth must be between 1 and 10");
     Board board = generateBoardFromFEN(fen);
     log(PERFT, "Starting perft with depth: " + std::to_string(depth) + " and FEN: " + fen);
-    uint64 start_time = getCurrentTimeSeconds();
+    uint64 start_time = getCurrentTimeMilliseconds();
     uint64 nodes = perft(depth, board, divide);
-    uint64 end_time = getCurrentTimeSeconds();
+    uint64 end_time = getCurrentTimeMilliseconds();
     log(PERFT, "Nodes searched: " + std::to_string(nodes));
-    log(PERFT, "Time taken: " + convertSecondsToString(end_time - start_time));
+    log(PERFT, "Time taken: " + convertMillisecondsToString(end_time - start_time));
     if (expected)
     {
         uint64 diff = nodes > expected ? nodes - expected : expected - nodes;
@@ -189,15 +189,17 @@ uint64 Engine::perft(int depth, Board board, bool divide)
     return total_nodes;
 }
 
-void Engine::testSearch(std::string fen)
+void Engine::testSearch(int depth, std::string fen)
 {
     Board board = generateBoardFromFEN(fen);
     log(CHESS_BOARD, "Testing search with FEN: " + fen);
-    uint64 start_time = getCurrentTimeSeconds();
-    Score score = search(board, 3, NEG_INFINITY, POS_INFINITY);
-    uint64 end_time = getCurrentTimeSeconds();
+    counter = 0;
+    uint64 start_time = getCurrentTimeMilliseconds();
+    Score score = search(board, depth, NEG_INFINITY, POS_INFINITY);
+    uint64 end_time = getCurrentTimeMilliseconds();
     log(PERFT, "Search score: " + std::to_string(score));
-    log(PERFT, "Time taken: " + convertSecondsToString(end_time - start_time));
+    log(PERFT, "Evaluated nodes: " + std::to_string(counter));
+    log(PERFT, "Time taken: " + convertMillisecondsToString(end_time - start_time));
 }
 
 // negamax with alpha beta pruning and quiescence
@@ -241,6 +243,7 @@ Score Engine::search(Board board, int depth, Score alpha, Score beta)
 // todo replace with actual evaluation function
 Score Engine::evaluateBoard(Board board)
 {
+    counter++;
     return rand() % 100;
 }
 
@@ -256,10 +259,11 @@ void printHelp(std::string executable_name)
 
 int main(int argc, char *argv[])
 {
-    // Engine engine;
-    // engine.testSearch();
-    // exit(0);
-
+    /*
+    Engine engine;
+    engine.testSearch(4, "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - ");
+    exit(0);
+    */
     // Initialize engine parameters based on command line arguments
     Mode mode = M_UCI;
     std::string start_fen = START_FEN;

@@ -629,34 +629,48 @@ void MoveGenerator::makeMove(Board &board, Move &move)
     move.previous_castling_rights = board.castling_rights;
     move.half_move_clock = board.half_move_clock;
 
-    board.capturePiece(move.to);
-    if (board.white_to_move ? move.piece == WHITE_PAWN : move.piece == BLACK_PAWN)
+    // capture piece
+    if (move.captured_piece != EMPTY)
+    {
+        board.half_move_clock = HALF_MOVE_CLOCK_RESET;
+        clear(*board.getBitboardByPiece(move.captured_piece), move.to);
+        clear(board.white_to_move ? board.black_pieces : board.white_pieces, move.to);
+        clear(board.occupied, move.to);
+    }
+
+    // handle en passant
+    if (move.piece == WHITE_PAWN || move.piece == BLACK_PAWN)
     {
         board.half_move_clock = HALF_MOVE_CLOCK_RESET;
         if (move.to == board.en_passant)
         {
-            board.capturePiece(board.en_passant + (board.white_to_move ? ONE_ROW_DOWN : ONE_ROW_UP));
-            move.captured_piece = board.white_to_move ? BLACK_PAWN : WHITE_PAWN;
+            if (board.white_to_move)
+            {
+                move.captured_piece = BLACK_PAWN;
+                clear(board.black_pawns, board.en_passant + ONE_ROW_DOWN);
+            }
+            else
+            {
+                move.captured_piece = WHITE_PAWN;
+                clear(board.white_pawns, board.en_passant + ONE_ROW_UP);
+            }
         }
         detectDoublePawnPushForEnPassant(board, move);
     }
     else
         board.en_passant = NO_EN_PASSANT;
 
-    if (move.captured_piece != EMPTY)
-        board.half_move_clock = HALF_MOVE_CLOCK_RESET;
-
     // move piece <=> update moved piece, own pieces and occupied squares
     Bitboard *piece = board.getBitboardByPiece(move.piece);
     BitBoard::movePiece(*piece, move.from, move.to);
-    BitBoard::movePiece(*(board.white_to_move ? &board.white_pieces : &board.black_pieces), move.from, move.to);
+    BitBoard::movePiece(board.white_to_move ? board.white_pieces : board.black_pieces, move.from, move.to);
     BitBoard::movePiece(board.occupied, move.from, move.to);
 
     handleCastling(board, move);
     if (move.promotion)
     {
-        move.promotion = board.white_to_move ? toupper(move.promotion) : tolower(move.promotion);
-        BitBoard::clear(*board.getBitboardByPiece(move.piece), move.to);
+        // move.promotion = board.white_to_move ? toupper(move.promotion) : tolower(move.promotion);
+        BitBoard::clear(*piece, move.to);
         BitBoard::set(*board.getBitboardByPiece(move.promotion), move.to);
     }
     board.white_to_move = !board.white_to_move;

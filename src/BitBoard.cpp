@@ -2,8 +2,7 @@
 
 void BitBoard::movePiece(Bitboard &board, Position from, Position to)
 {
-    BitBoard::clear(board, from);
-    BitBoard::set(board, to);
+    board ^= (1ULL << from | 1ULL << to);
 }
 
 void BitBoard::set(Bitboard &board, Position position)
@@ -13,7 +12,7 @@ void BitBoard::set(Bitboard &board, Position position)
 
 void BitBoard::clear(Bitboard &board, Position position)
 {
-    board &= ~(1ULL << position);
+    board ^= 1ULL << position;
 }
 
 bool BitBoard::isSet(Bitboard board, Position position)
@@ -212,17 +211,6 @@ Piece BitBoard::Board::getPieceAt(Position position)
     if (black_king & mask)
         return BLACK_KING;
     return EMPTY;
-}
-
-void BitBoard::Board::capturePiece(Position position)
-{
-    clear(white_to_move ? black_pieces : white_pieces, position);
-    clear(white_to_move ? black_pawns : white_pawns, position);
-    clear(white_to_move ? black_rooks : white_rooks, position);
-    clear(white_to_move ? black_knights : white_knights, position);
-    clear(white_to_move ? black_bishops : white_bishops, position);
-    clear(white_to_move ? black_queens : white_queens, position);
-    clear(occupied, position);
 }
 
 void BitBoard::printGameState(Board board)

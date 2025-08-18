@@ -17,11 +17,12 @@ public:
     uint64 startPerft(int depth, std::string fen = START_FEN, bool divide = true, uint64 expected = 0);
     void startUCI();
     GameState getGameState(Board &board, MoveList moves);
-    void testSearch(std::string fen = START_FEN);
+    void testSearch(int depth, std::string fen = START_FEN);
     Score search(Board board, int depth, Score alpha, Score beta);
     Score evaluateBoard(Board board);
 
 private:
+    uint64 counter = 0;
     std::stack<Move> move_history;
     MoveGenerator move_generator;
     Move getLegalMoveFromUser(MoveList legal_moves);

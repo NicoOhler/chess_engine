@@ -16,19 +16,21 @@ Position getSquareIndex(std::string square)
     return 8 * (row - '1') + (col - 'a');
 }
 
-uint64 getCurrentTimeSeconds()
+uint64 getCurrentTimeMilliseconds()
 {
-    return std::chrono::duration_cast<std::chrono::seconds>(
+    return std::chrono::duration_cast<std::chrono::milliseconds>(
                std::chrono::steady_clock::now().time_since_epoch())
         .count();
 }
 
-// return number of hours, minutes and seconds
-std::string convertSecondsToString(uint64 seconds)
+// return number of hours, minutes, seconds and milliseconds
+std::string convertMillisecondsToString(uint64 milliseconds)
 {
-    int hours = seconds / 3600;
-    seconds %= 3600;
-    int minutes = seconds / 60;
-    seconds %= 60;
-    return std::to_string(hours) + "h " + std::to_string(minutes) + "m " + std::to_string(seconds) + "s";
+    int hours = milliseconds / 3600000;
+    milliseconds %= 3600000;
+    int minutes = milliseconds / 60000;
+    milliseconds %= 60000;
+    int seconds = milliseconds / 1000;
+    milliseconds %= 1000;
+    return std::to_string(hours) + "h " + std::to_string(minutes) + "m " + std::to_string(seconds) + "s " + std::to_string(milliseconds) + "ms";
 }
