@@ -128,12 +128,15 @@ BitBoard::Board BitBoard::generateBoardFromFEN(std::string fen)
         board.en_passant = getSquareIndex(fen.substr(i, 2));
     i += no_en_passant ? 2 : 3;
 
-    // parse half move clock
-    bool two_digits = fen[i + 1] != ' ';
-    if (two_digits)
-        board.half_move_clock = (fen[i++] - '0') * 10 + (fen[i++] - '0');
-    else
-        board.half_move_clock = fen[i++] - '0';
+    // parse half move clock if present
+    if (fen.length() > i)
+    {
+        bool two_digits = fen[i + 1] != ' ';
+        if (two_digits)
+            board.half_move_clock = (fen[i++] - '0') * 10 + (fen[i++] - '0');
+        else
+            board.half_move_clock = fen[i++] - '0';
+    }
 
     // ? is the full move number needed for anything?
     /*

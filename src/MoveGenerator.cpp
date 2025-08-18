@@ -665,7 +665,6 @@ void MoveGenerator::makeMove(Board &board, Move &move)
 
 void MoveGenerator::unmakeMove(Board &board, Move move)
 {
-    // ? en passant restore piece + undo promotion
     board.white_to_move = !board.white_to_move;
     board.half_move_clock = move.half_move_clock;
     board.castling_rights = move.previous_castling_rights;
@@ -699,6 +698,18 @@ void MoveGenerator::unmakeMove(Board &board, Move move)
         BitBoard::set(*captured_piece, position);
         BitBoard::set(*enemy_pieces, position);
         BitBoard::set(board.occupied, position);
+    }
+
+    // place rook where it was before castling
+    if (move.castling)
+    {
+        Bitboard *rooks = board.getBitboardByPiece(board.white_to_move ? WHITE_ROOK : BLACK_ROOK);
+        bool king_side_castling = move.castling & (board.white_to_move ? WHITE_KING_SIDE_CASTLING : BLACK_KING_SIDE_CASTLING);
+        move.from += king_side_castling ? ONE_COL_RIGHT : ONE_COL_LEFT;
+        move.to += king_side_castling ? ONE_COL_RIGHT : 2 * ONE_COL_LEFT;
+        BitBoard::movePiece(*rooks, move.from, move.to);
+        BitBoard::movePiece(*own_pieces, move.from, move.to);
+        BitBoard::movePiece(board.occupied, move.from, move.to);
     }
 }
 
