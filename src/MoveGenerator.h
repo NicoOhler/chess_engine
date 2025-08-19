@@ -121,5 +121,6 @@ public:
     void makeMove(Board &board, Move &move);
     void unmakeMove(Board &board, Move move);
     MoveList generateLegalMoves(Board board);
-    bool squaresThreatened(Board &board, Bitboard squares, bool opponent);
+    bool squareUnderAttack(Board &board, Position square, bool white_is_attacker);
+    bool squaresUnderAttack(Board &board, Bitboard squares, bool white_is_attacker);
 };

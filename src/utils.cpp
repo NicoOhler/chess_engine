@@ -37,11 +37,17 @@ Score getPieceValue(Piece piece)
     }
 }
 
-uint64 getCurrentTimeMilliseconds()
+uint64 startTimeMeasure()
 {
     return std::chrono::duration_cast<std::chrono::milliseconds>(
                std::chrono::steady_clock::now().time_since_epoch())
         .count();
+}
+
+void endTimeMeasure(uint64 start_time, LogType log_type)
+{
+    uint64 end_time = startTimeMeasure();
+    log(log_type, "Time taken: " + convertMillisecondsToString(end_time - start_time));
 }
 
 // return number of hours, minutes, seconds and milliseconds

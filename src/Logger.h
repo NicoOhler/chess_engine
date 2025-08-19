@@ -23,7 +23,9 @@ const LogType KING_MOVE = WHITE;
 const LogType REMOVE_ILLEGAL_MOVES = WHITE;
 const LogType REMAINING_MOVES = WHITE;
 const LogType PERFT = WHITE | LOG_TYPE_ENABLED;
-const LogType ITERATIVE_DEEPENING = WHITE | LOG_TYPE_ENABLED;
+const LogType SEARCH = WHITE | LOG_TYPE_ENABLED;
+const LogType FEN = WHITE | LOG_TYPE_ENABLED;
+const LogType TIME = WHITE | LOG_TYPE_ENABLED;
 
 void log(LogType logType, std::string message);
 

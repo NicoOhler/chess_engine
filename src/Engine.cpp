@@ -30,7 +30,7 @@ Move Engine::getLegalMoveFromUser(MoveList legal_moves)
         // print legal moves
         if (input[0] == 'p')
         {
-            std::cout << "Legal moves:" << std::endl;
+            std::cout << "Legal moves: " << legal_moves.size << std::endl;
             for (int i = 0; i < legal_moves.size; i++)
             {
                 Move legal_move = legal_moves.moves[i];
@@ -111,8 +111,8 @@ GameState Engine::getGameState(Board &board, MoveList moves)
 {
     if (!moves.empty() && board.half_move_clock < HALF_MOVE_CLOCK_LIMIT)
         return IN_PROGRESS;
-    Bitboard king = board.white_to_move ? board.white_king : board.black_king;
-    return move_generator.squaresThreatened(board, king, true) ? CHECKMATE : DRAW;
+    Position king_square = getRightmostSetBit(board.white_to_move ? board.white_king : board.black_king);
+    return move_generator.squareUnderAttack(board, king_square, board.white_to_move) ? CHECKMATE : DRAW;
 }
 
 uint64 Engine::startPerft(int depth, std::string fen, bool divide, uint64 expected)
@@ -120,11 +120,10 @@ uint64 Engine::startPerft(int depth, std::string fen, bool divide, uint64 expect
     assert(depth >= 1 && depth <= 10, "Perft depth must be between 1 and 10");
     Board board = generateBoardFromFEN(fen);
     log(PERFT, "Starting perft with depth: " + std::to_string(depth) + " and FEN: " + fen);
-    uint64 start_time = getCurrentTimeMilliseconds();
+    uint64 start_time = startTimeMeasure();
     uint64 nodes = perft(depth, board, divide);
-    uint64 end_time = getCurrentTimeMilliseconds();
+    endTimeMeasure(start_time, PERFT);
     log(PERFT, "Nodes searched: " + std::to_string(nodes));
-    log(PERFT, "Time taken: " + convertMillisecondsToString(end_time - start_time));
     if (expected)
     {
         uint64 diff = nodes > expected ? nodes - expected : expected - nodes;
@@ -179,11 +178,12 @@ uint64 Engine::perft(int depth, Board board, bool divide)
     uint64 total_nodes = 0;
     for (int i = 0; i < legal_moves.size; i++)
     {
-        move_generator.makeMove(board, legal_moves.moves[i]);
+        Move move = legal_moves.moves[i];
+        move_generator.makeMove(board, move);
         uint64 nodes = perft(depth - 1, board);
-        move_generator.unmakeMove(board, legal_moves.moves[i]);
+        move_generator.unmakeMove(board, move);
         if (divide)
-            log(PERFT, getSquareName(legal_moves.moves[i].from) + getSquareName(legal_moves.moves[i].to) + ": " + std::to_string(nodes));
+            log(PERFT, getSquareName(move.from) + getSquareName(move.to) + ": " + std::to_string(nodes));
         total_nodes += nodes;
     }
     return total_nodes;
@@ -194,12 +194,11 @@ void Engine::startSearch(int depth, std::string fen)
     Board board = generateBoardFromFEN(fen);
     log(CHESS_BOARD, "Testing search with FEN: " + fen);
     counter = 0;
-    uint64 start_time = getCurrentTimeMilliseconds();
+    uint64 start_time = startTimeMeasure();
     iterativeDeepening(board, depth);
-    uint64 end_time = getCurrentTimeMilliseconds();
-    log(PERFT, "Search score: " + std::to_string(best_score));
-    log(PERFT, "Evaluated nodes: " + std::to_string(counter));
-    log(PERFT, "Time taken: " + convertMillisecondsToString(end_time - start_time));
+    endTimeMeasure(start_time, SEARCH);
+    log(SEARCH, "Search score: " + std::to_string(best_score));
+    log(SEARCH, "Evaluated nodes: " + std::to_string(counter));
 }
 
 void Engine::iterativeDeepening(Board &board, int max_depth)
@@ -210,8 +209,8 @@ void Engine::iterativeDeepening(Board &board, int max_depth)
     for (int depth = 1; depth <= max_depth; depth++)
     {
         best_score = search(board, depth, NEG_INFINITY, POS_INFINITY, true);
-        log(ITERATIVE_DEEPENING, "Depth " + std::to_string(depth) + " best move " + best_move.toString() +
-                                     " score " + std::to_string(best_score));
+        log(SEARCH, "Depth " + std::to_string(depth) + " best move " + best_move.toString() +
+                        " score " + std::to_string(best_score));
     }
 }
 
@@ -341,7 +340,7 @@ int main(int argc, char *argv[])
     std::string start_fen = START_FEN;
     int depth = 0;
     bool divide = false;
-    int expected_perft = 0;
+    uint64 expected_perft = 0;
     for (int i = 1; i < argc; i++)
     {
         if (std::string(argv[i]) == "-m" && i + 1 < argc)

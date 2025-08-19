@@ -58,7 +58,7 @@
                 "-m",
                 "c",
                 "-f",
-                "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - "
+                "rnbqkbnr/pp1p1ppp/4p3/1Pp5/8/8/P1PPPPPP/RNBQKBNR w KQkq c6 0 3"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -85,7 +85,9 @@
                 "p",
                 "-p",
                 "5",
-                "-d"
+                "-d",
+                "-e",
+                "4865609"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -112,7 +114,9 @@
                 "p",
                 "-p",
                 "7",
-                "-d"
+                "-d",
+                "-e",
+                "3195901860"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -138,12 +142,12 @@
                 "-m",
                 "p",
                 "-f",
-                "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - ",
+                "rnbqk1nr/ppppppbp/B5p1/8/8/4P2N/PPPP1PPP/RNBQK2R b KQkq - 3 3",
                 "-p",
-                "5",
+                "2",
                 "-d",
                 "-e",
-                "193690690"
+                "119060324"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -171,7 +175,7 @@
                 "-f",
                 "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - ",
                 "-p",
-                "6",
+                "8",
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
