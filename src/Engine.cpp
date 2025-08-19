@@ -120,9 +120,9 @@ uint64 Engine::startPerft(int depth, std::string fen, bool divide, uint64 expect
     assert(depth >= 1 && depth <= 10, "Perft depth must be between 1 and 10");
     Board board = generateBoardFromFEN(fen);
     log(PERFT, "Starting perft with depth: " + std::to_string(depth) + " and FEN: " + fen);
-    uint64 start_time = startTimeMeasure();
+    timer.start();
     uint64 nodes = perft(depth, board, divide);
-    endTimeMeasure(start_time, PERFT);
+    timer.stop(PERFT);
     log(PERFT, "Nodes searched: " + std::to_string(nodes));
     if (expected)
     {
@@ -189,14 +189,13 @@ uint64 Engine::perft(int depth, Board board, bool divide)
     return total_nodes;
 }
 
-void Engine::startSearch(int depth, std::string fen)
+void Engine::startSearch(int depth, std::string fen, Milliseconds time_limit)
 {
     Board board = generateBoardFromFEN(fen);
-    log(CHESS_BOARD, "Testing search with FEN: " + fen);
+    log(CHESS_BOARD, "Starting search with FEN: " + fen);
     counter = 0;
-    uint64 start_time = startTimeMeasure();
+    timer.limit = time_limit;
     iterativeDeepening(board, depth);
-    endTimeMeasure(start_time, SEARCH);
     log(SEARCH, "Search score: " + std::to_string(best_score));
     log(SEARCH, "Evaluated nodes: " + std::to_string(counter));
 }
@@ -206,7 +205,8 @@ void Engine::iterativeDeepening(Board &board, int max_depth)
     best_score = 0;
     best_move = NULL_MOVE; // no previous best move for depth 1
 
-    for (int depth = 1; depth <= max_depth; depth++)
+    timer.start();
+    for (int depth = 1; depth <= max_depth && timer.timeLeft(); depth++)
     {
         best_score = search(board, depth, NEG_INFINITY, POS_INFINITY, true);
         log(SEARCH, "Depth " + std::to_string(depth) + " best move " + best_move.toString() +
@@ -293,6 +293,10 @@ Score Engine::search(Board board, int depth, Score alpha, Score beta, bool root)
         // beta = value of the best move found so far by the parent
         if (beta <= alpha)
             break;
+
+        // interrupt search if time is up
+        if (!timer.timeLeft())
+            break;
     }
     return max;
 }
@@ -330,6 +334,7 @@ void printHelp(std::string executable_name)
               << "  -f FEN: Start the game with the given FEN string\n"
               << "  -p ply: Run perft/search with the given ply/depth/number of half moves)\n"
               << "  -d: Divide perft results\n"
+              << "  -t: Set search time (in milliseconds)\n"
               << "  -h: Show this help message" << std::endl;
 }
 
@@ -341,6 +346,7 @@ int main(int argc, char *argv[])
     int depth = 0;
     bool divide = false;
     uint64 expected_perft = 0;
+    Milliseconds search_time = SEARCH_TIME_LIMIT;
     for (int i = 1; i < argc; i++)
     {
         if (std::string(argv[i]) == "-m" && i + 1 < argc)
@@ -353,6 +359,8 @@ int main(int argc, char *argv[])
             expected_perft = std::stoull(argv[++i]);
         else if (std::string(argv[i]) == "-d")
             divide = true;
+        else if (std::string(argv[i]) == "-t" && i + 1 < argc)
+            search_time = std::stoull(argv[++i]);
         else if (std::string(argv[i]) == "-h")
         {
             printHelp(argv[0]);
@@ -380,7 +388,7 @@ int main(int argc, char *argv[])
         engine.startPerft(depth, start_fen, divide, expected_perft);
         break;
     case M_SEARCH:
-        engine.startSearch(depth, start_fen);
+        engine.startSearch(depth, start_fen, search_time);
         break;
     default:
         std::cout << "Invalid mode. Use 'u' for UCI, 'c' for console or 'p' for perft." << std::endl;

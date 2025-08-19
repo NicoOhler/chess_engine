@@ -12,6 +12,7 @@ typedef unsigned char Piece;
 typedef unsigned char Mode;
 typedef unsigned char GameState;
 typedef signed char Clock;
+typedef uint64 Milliseconds;
 
 // basic constants
 const Position NUM_SQUARES = 64;
@@ -34,6 +35,8 @@ const Position ONE_ROW_UP_ONE_COL_RIGHT = 9;
 const Position ONE_ROW_DOWN_ONE_COL_LEFT = -9;
 const Position ONE_ROW_DOWN_ONE_COL_RIGHT = -7;
 
+// engine
+const Milliseconds SEARCH_TIME_LIMIT = 3000; // milliseconds
 const Score PAWN_VALUE = 100;
 const Score KNIGHT_VALUE = 300;
 const Score BISHOP_VALUE = 330;

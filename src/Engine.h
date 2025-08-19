@@ -1,5 +1,6 @@
 #pragma once
 #include "MoveGenerator.h"
+#include "Timer.h"
 #include "definitions.h"
 #include <iostream>
 #include <stack>
@@ -16,7 +17,7 @@ public:
     void startConsoleGame(std::string fen = START_FEN);
     uint64 startPerft(int depth, std::string fen = START_FEN, bool divide = true, uint64 expected = 0);
     void startUCI();
-    void startSearch(int depth, std::string fen = START_FEN);
+    void startSearch(int depth, std::string fen = START_FEN, Milliseconds time_limit = SEARCH_TIME_LIMIT);
     GameState getGameState(Board &board, MoveList moves);
     void iterativeDeepening(Board &board, int max_depth);
     Score evaluateBoard(Board board);
@@ -27,6 +28,7 @@ private:
     Score best_score = 0;
     std::stack<Move> move_history;
     MoveGenerator move_generator;
+    Timer timer;
 
     void calculateMoveScores(MoveList &moves, Board &board);
     Move pickBestMove(MoveList &moves);
