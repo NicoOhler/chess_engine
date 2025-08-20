@@ -1,5 +1,6 @@
 ### TODO
 + connect engine to GUI via UCI
++ use Piece as array index
 + optimizations 
     + improve move ordering (killer, history)
     + transposition tables

@@ -26,14 +26,14 @@ const Clock HALF_MOVE_CLOCK_RESET = -1;
 const Clock HALF_MOVE_CLOCK_LIMIT = 100;
 
 // directions
-const Position ONE_ROW_UP = 8;
-const Position ONE_ROW_DOWN = -8;
-const Position ONE_COL_LEFT = -1;
-const Position ONE_COL_RIGHT = 1;
-const Position ONE_ROW_UP_ONE_COL_LEFT = 7;
-const Position ONE_ROW_UP_ONE_COL_RIGHT = 9;
-const Position ONE_ROW_DOWN_ONE_COL_LEFT = -9;
-const Position ONE_ROW_DOWN_ONE_COL_RIGHT = -7;
+const Position UP = 8;
+const Position DOWN = -8;
+const Position LEFT = -1;
+const Position RIGHT = 1;
+const Position UP_LEFT = 7;
+const Position UP_RIGHT = 9;
+const Position DOWN_LEFT = -9;
+const Position DOWN_RIGHT = -7;
 
 // engine
 const bool ENABLE_QUIESCENCE = false;
@@ -48,23 +48,40 @@ const Score ROOK_VALUE = 500;
 const Score QUEEN_VALUE = 900;
 const Score KING_VALUE = 20000;
 const Score DELTA = 800;
+const Score DRAW_VALUE = -200;
 
 enum PIECES
 {
-    WHITE_PAWN = 'P',
-    WHITE_KNIGHT = 'N',
-    WHITE_BISHOP = 'B',
-    WHITE_ROOK = 'R',
-    WHITE_QUEEN = 'Q',
-    WHITE_KING = 'K',
-    BLACK_PAWN = 'p',
-    BLACK_KNIGHT = 'n',
-    BLACK_BISHOP = 'b',
-    BLACK_ROOK = 'r',
-    BLACK_QUEEN = 'q',
-    BLACK_KING = 'k',
-    EMPTY = ' ',
-    UNDO = 'u'
+    WHITE_PAWN,
+    WHITE_KNIGHT,
+    WHITE_BISHOP,
+    WHITE_ROOK,
+    WHITE_QUEEN,
+    WHITE_KING,
+    BLACK_PAWN,
+    BLACK_KNIGHT,
+    BLACK_BISHOP,
+    BLACK_ROOK,
+    BLACK_QUEEN,
+    BLACK_KING,
+    EMPTY,
+    UNDO
+};
+
+enum PIECE_SYMBOLS
+{
+    WHITE_PAWN_SYMBOL = 'P',
+    WHITE_KNIGHT_SYMBOL = 'N',
+    WHITE_BISHOP_SYMBOL = 'B',
+    WHITE_ROOK_SYMBOL = 'R',
+    WHITE_QUEEN_SYMBOL = 'Q',
+    WHITE_KING_SYMBOL = 'K',
+    BLACK_PAWN_SYMBOL = 'p',
+    BLACK_KNIGHT_SYMBOL = 'n',
+    BLACK_BISHOP_SYMBOL = 'b',
+    BLACK_ROOK_SYMBOL = 'r',
+    BLACK_QUEEN_SYMBOL = 'q',
+    BLACK_KING_SYMBOL = 'k',
 };
 
 enum ROWS

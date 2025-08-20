@@ -68,7 +68,7 @@ BitBoard::Board BitBoard::generateBoardFromFEN(std::string fen)
                 continue;
             }
 
-            Bitboard *piece = board.getBitboardByPiece(c);
+            Bitboard *piece = board.getBitboardByPieceSymbol(c);
             BitBoard::set(*piece, square);
             BitBoard::set(board.occupied, square);
             BitBoard::set(isupper(c) ? board.white_pieces : board.black_pieces, square);
@@ -90,16 +90,16 @@ BitBoard::Board BitBoard::generateBoardFromFEN(std::string fen)
                 break;
             switch (fen[i++])
             {
-            case WHITE_KING:
+            case WHITE_KING_SYMBOL:
                 board.castling_rights |= WHITE_KING_SIDE_CASTLING;
                 break;
-            case WHITE_QUEEN:
+            case WHITE_QUEEN_SYMBOL:
                 board.castling_rights |= WHITE_QUEEN_SIDE_CASTLING;
                 break;
-            case BLACK_KING:
+            case BLACK_KING_SYMBOL:
                 board.castling_rights |= BLACK_KING_SIDE_CASTLING;
                 break;
-            case BLACK_QUEEN:
+            case BLACK_QUEEN_SYMBOL:
                 board.castling_rights |= BLACK_QUEEN_SIDE_CASTLING;
                 break;
             default:
@@ -164,6 +164,40 @@ Bitboard *BitBoard::Board::getBitboardByPiece(Piece piece)
     case BLACK_QUEEN:
         return &black_queens;
     case BLACK_KING:
+        return &black_king;
+    default:
+        assert(false, "Invalid piece");
+    }
+    return nullptr;
+}
+
+Bitboard *BitBoard::Board::getBitboardByPieceSymbol(Piece piece)
+{
+    switch (piece)
+    {
+    case WHITE_PAWN_SYMBOL:
+        return &white_pawns;
+    case WHITE_ROOK_SYMBOL:
+        return &white_rooks;
+    case WHITE_KNIGHT_SYMBOL:
+        return &white_knights;
+    case WHITE_BISHOP_SYMBOL:
+        return &white_bishops;
+    case WHITE_QUEEN_SYMBOL:
+        return &white_queens;
+    case WHITE_KING_SYMBOL:
+        return &white_king;
+    case BLACK_PAWN_SYMBOL:
+        return &black_pawns;
+    case BLACK_ROOK_SYMBOL:
+        return &black_rooks;
+    case BLACK_KNIGHT_SYMBOL:
+        return &black_knights;
+    case BLACK_BISHOP_SYMBOL:
+        return &black_bishops;
+    case BLACK_QUEEN_SYMBOL:
+        return &black_queens;
+    case BLACK_KING_SYMBOL:
         return &black_king;
     default:
         assert(false, "Invalid piece");
@@ -265,8 +299,8 @@ void BitBoard::placePiecesOnBoard(Board board, char board_to_print[8][8])
 {
     Bitboard pieces[12] = {board.white_pawns, board.white_rooks, board.white_knights, board.white_bishops, board.white_queens, board.white_king,
                            board.black_pawns, board.black_rooks, board.black_knights, board.black_bishops, board.black_queens, board.black_king};
-    Piece piece_types[12] = {WHITE_PAWN, WHITE_ROOK, WHITE_KNIGHT, WHITE_BISHOP, WHITE_QUEEN, WHITE_KING,
-                             BLACK_PAWN, BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLACK_KING};
+    Piece piece_types[12] = {WHITE_PAWN_SYMBOL, WHITE_ROOK_SYMBOL, WHITE_KNIGHT_SYMBOL, WHITE_BISHOP_SYMBOL, WHITE_QUEEN_SYMBOL, WHITE_KING_SYMBOL,
+                             BLACK_PAWN_SYMBOL, BLACK_ROOK_SYMBOL, BLACK_KNIGHT_SYMBOL, BLACK_BISHOP_SYMBOL, BLACK_QUEEN_SYMBOL, BLACK_KING_SYMBOL};
     for (char i = 0; i < 8; i++)
         for (char j = 0; j < 8; j++)
             board_to_print[i][j] = ' ';

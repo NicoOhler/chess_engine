@@ -1,5 +1,6 @@
 #pragma once
 #include "MoveGenerator.h"
+#include "ZobristHash.h"
 #include "Timer.h"
 #include "definitions.h"
 #include <iostream>
@@ -11,9 +12,6 @@ using namespace std;
 class Engine
 {
 public:
-    Engine() = default;
-    ~Engine() = default;
-
     void startConsoleGame(std::string fen = START_FEN);
     uint64 startPerft(int depth, std::string fen = START_FEN, bool divide = true, uint64 expected = 0);
     void startUCI();
@@ -28,6 +26,8 @@ private:
     Score best_score = 0;
     std::stack<Move> move_history;
     MoveGenerator move_generator;
+    ZobristHash zobrist_hash;
+    uint64 hash;
     Timer timer;
     Board board;
 

@@ -83,6 +83,7 @@ namespace BitBoard
         Clock half_move_clock;
 
         Bitboard *getBitboardByPiece(Piece piece);
+        Bitboard *getBitboardByPieceSymbol(Piece piece);
         Piece getPieceAt(Position position);
         bool isSquareOccupied(Position position);
     };

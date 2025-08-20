@@ -3,6 +3,7 @@
 void Engine::startConsoleGame(std::string fen)
 {
     board = generateBoardFromFEN(fen);
+    hash = zobrist_hash.getHash(board);
     log(CHESS_BOARD, "Initialized board with FEN: " + fen);
     printGameState(board);
     MoveList moves = move_generator.generateLegalMoves(board);
@@ -13,6 +14,8 @@ void Engine::startConsoleGame(std::string fen)
         if (move.promotion)
             move.promotion = board.white_to_move ? toupper(move.promotion) : tolower(move.promotion);
         applyAndTrackMove(move);
+        hash = zobrist_hash.updateHash(hash, move, board);
+        assert(hash == zobrist_hash.getHash(board), "hashes differ");
         printGameState(board);
         moves = move_generator.generateLegalMoves(board);
     } while (getGameState(moves) == IN_PROGRESS);
@@ -291,10 +294,12 @@ Score Engine::search(int depth, Score alpha, Score beta, bool root)
 
     MoveList legal_moves = move_generator.generateLegalMoves(board);
     GameState game_state = getGameState(legal_moves);
+    // add depth to prefer fast games
     if (game_state == CHECKMATE)
-        return NEG_INFINITY; // todo add ply to prefer slow losses
+        return NEG_INFINITY + depth;
+    // treat draws as slightly negative
     if (game_state == DRAW)
-        return 0;
+        return DRAW_VALUE + depth;
 
     // evaluate moves until pruning possible
     calculateMoveScores(legal_moves, best_move);
