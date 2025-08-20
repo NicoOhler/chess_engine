@@ -2,7 +2,7 @@
 
 void Engine::startConsoleGame(std::string fen)
 {
-    Board board = generateBoardFromFEN(fen);
+    board = generateBoardFromFEN(fen);
     log(CHESS_BOARD, "Initialized board with FEN: " + fen);
     printGameState(board);
     MoveList moves = move_generator.generateLegalMoves(board);
@@ -12,11 +12,11 @@ void Engine::startConsoleGame(std::string fen)
         Move move = getLegalMoveFromUser(moves);
         if (move.promotion)
             move.promotion = board.white_to_move ? toupper(move.promotion) : tolower(move.promotion);
-        applyAndTrackMove(board, move);
+        applyAndTrackMove(move);
         printGameState(board);
         moves = move_generator.generateLegalMoves(board);
-    } while (getGameState(board, moves) == IN_PROGRESS);
-    std::cout << (getGameState(board, moves) == CHECKMATE ? "Checkmate" : "Draw") << std::endl;
+    } while (getGameState(moves) == IN_PROGRESS);
+    std::cout << (getGameState(moves) == CHECKMATE ? "Checkmate" : "Draw") << std::endl;
 }
 
 Move Engine::getLegalMoveFromUser(MoveList legal_moves)
@@ -93,7 +93,7 @@ Piece Engine::getPromotionChoice()
     }
 }
 
-void Engine::applyAndTrackMove(Board &board, Move move)
+void Engine::applyAndTrackMove(Move move)
 {
     if (move.piece == UNDO)
     {
@@ -107,7 +107,7 @@ void Engine::applyAndTrackMove(Board &board, Move move)
     move_generator.makeMove(board, move);
 }
 
-GameState Engine::getGameState(Board &board, MoveList moves)
+GameState Engine::getGameState(MoveList moves)
 {
     if (!moves.empty() && board.half_move_clock < HALF_MOVE_CLOCK_LIMIT)
         return IN_PROGRESS;
@@ -118,10 +118,10 @@ GameState Engine::getGameState(Board &board, MoveList moves)
 uint64 Engine::startPerft(int depth, std::string fen, bool divide, uint64 expected)
 {
     assert(depth >= 1 && depth <= 10, "Perft depth must be between 1 and 10");
-    Board board = generateBoardFromFEN(fen);
+    board = generateBoardFromFEN(fen);
     log(PERFT, "Starting perft with depth: " + std::to_string(depth) + " and FEN: " + fen);
     timer.start();
-    uint64 nodes = perft(depth, board, divide);
+    uint64 nodes = perft(depth, divide);
     timer.stop(PERFT);
     log(PERFT, "Nodes searched: " + std::to_string(nodes));
     if (expected)
@@ -167,7 +167,7 @@ void Engine::startUCI()
     }
 }
 
-uint64 Engine::perft(int depth, Board board, bool divide)
+uint64 Engine::perft(int depth, bool divide)
 {
     // if (depth == 0)
     //     return 1;
@@ -180,7 +180,7 @@ uint64 Engine::perft(int depth, Board board, bool divide)
     {
         Move move = legal_moves.moves[i];
         move_generator.makeMove(board, move);
-        uint64 nodes = perft(depth - 1, board);
+        uint64 nodes = perft(depth - 1);
         move_generator.unmakeMove(board, move);
         if (divide)
             log(PERFT, getSquareName(move.from) + getSquareName(move.to) + ": " + std::to_string(nodes));
@@ -191,16 +191,16 @@ uint64 Engine::perft(int depth, Board board, bool divide)
 
 void Engine::startSearch(int depth, std::string fen, Milliseconds time_limit)
 {
-    Board board = generateBoardFromFEN(fen);
+    board = generateBoardFromFEN(fen);
     log(CHESS_BOARD, "Starting search with FEN: " + fen);
     counter = 0;
     timer.limit = time_limit;
-    iterativeDeepening(board, depth);
+    iterativeDeepening(depth);
     log(SEARCH, "Search score: " + std::to_string(best_score));
     log(SEARCH, "Evaluated nodes: " + std::to_string(counter));
 }
 
-void Engine::iterativeDeepening(Board &board, int max_depth)
+void Engine::iterativeDeepening(int max_depth)
 {
     best_score = 0;
     best_move = NULL_MOVE; // no previous best move for depth 1
@@ -208,13 +208,17 @@ void Engine::iterativeDeepening(Board &board, int max_depth)
     timer.start();
     for (int depth = 1; depth <= max_depth && timer.timeLeft(); depth++)
     {
-        best_score = search(board, depth, NEG_INFINITY, POS_INFINITY, true);
+        best_score = search(depth, NEG_INFINITY, POS_INFINITY, true);
         log(SEARCH, "Depth " + std::to_string(depth) + " best move " + best_move.toString() +
                         " score " + std::to_string(best_score));
     }
+    if (timer.timeLeft())
+        timer.stop(SEARCH);
+    else
+        log(SEARCH, "Search interrupted due to time limit.");
 }
 
-void Engine::calculateMoveScores(MoveList &moves, Board &board)
+void Engine::calculateMoveScores(MoveList &moves, Move best_move)
 {
     for (int i = 0; i < moves.size; i++)
     {
@@ -228,9 +232,34 @@ void Engine::calculateMoveScores(MoveList &moves, Board &board)
         else if (move.captured_piece != EMPTY)
             moves.scores[i] = getPieceValue(move.captured_piece) - getPieceValue(move.piece) + 10000;
 
+        // promotions
+        else if (move.promotion != EMPTY)
+            moves.scores[i] = getPieceValue(move.promotion) + 10000;
+
         // todo add killer moves, history later on
         else
             moves.scores[i] = 0;
+    }
+
+    if (!ENABLE_MOVE_SORTING)
+        return;
+
+    // sort moves by score
+    // insertion sort seems best for small arrays
+    for (int i = 1; i < moves.size; i++)
+    {
+        Move key_move = moves.moves[i];
+        Score key_score = moves.scores[i];
+        int j = i - 1;
+
+        while (j >= 0 && moves.scores[j] < key_score)
+        {
+            moves.moves[j + 1] = moves.moves[j];
+            moves.scores[j + 1] = moves.scores[j];
+            j--;
+        }
+        moves.moves[j + 1] = key_move;
+        moves.scores[j + 1] = key_score;
     }
 }
 
@@ -254,30 +283,28 @@ Move Engine::pickBestMove(MoveList &moves)
 }
 
 // negamax with alpha beta pruning and quiescence
-Score Engine::search(Board board, int depth, Score alpha, Score beta, bool root)
+Score Engine::search(int depth, Score alpha, Score beta, bool root)
 {
-    // todo quiescence + iterative deepening
     // immediately return evaluation for leaf nodes (max depth, draw, stalemate or checkmate)
     if (depth == 0)
-        return evaluateBoard(board);
+        return ENABLE_QUIESCENCE ? quiescence(alpha, beta) : evaluateBoard();
 
     MoveList legal_moves = move_generator.generateLegalMoves(board);
-    GameState game_state = getGameState(board, legal_moves);
+    GameState game_state = getGameState(legal_moves);
     if (game_state == CHECKMATE)
         return NEG_INFINITY; // todo add ply to prefer slow losses
     if (game_state == DRAW)
         return 0;
 
     // evaluate moves until pruning possible
-    calculateMoveScores(legal_moves, board);
+    calculateMoveScores(legal_moves, best_move);
     Score max = NEG_INFINITY;
     for (int i = 0; i < legal_moves.size; i++)
     {
-        // Move move = legal_moves.moves[i];
-        Move move = pickBestMove(legal_moves);
+        Move move = ENABLE_MOVE_SORTING ? legal_moves.moves[i] : pickBestMove(legal_moves);
         move_generator.makeMove(board, move);
         // alpha beta are swapped since the opponent tries to minimize our score
-        Score score = -search(board, depth - 1, -beta, -alpha);
+        Score score = -search(depth - 1, -beta, -alpha);
         move_generator.unmakeMove(board, move);
         if (score > max)
         {
@@ -301,8 +328,48 @@ Score Engine::search(Board board, int depth, Score alpha, Score beta, bool root)
     return max;
 }
 
+Score Engine::quiescence(Score alpha, Score beta, int max_depth)
+{
+    // use static evaluation as baseline
+    // in case no further captures are possible
+    Score stand_pat = evaluateBoard();
+    if (stand_pat >= beta)
+        return beta;
+    if (stand_pat > alpha)
+        alpha = stand_pat;
+
+    // return if max depth exceeded or if current position is really bad (delta pruning)
+    if (max_depth <= 0 || stand_pat + DELTA < alpha)
+        return stand_pat;
+
+    // further examine captures, checks and promotions
+    // ? maybe create generateInterestingMoves(board) (checks, captures, promotions)
+    MoveList legal_moves = move_generator.generateLegalMoves(board, true);
+    calculateMoveScores(legal_moves);
+    for (int i = 0; i < legal_moves.size; i++)
+    {
+        Move move = pickBestMove(legal_moves);
+        // todo also consider checks
+        if (move.captured_piece == EMPTY && move.promotion == EMPTY)
+            continue;
+
+        move_generator.makeMove(board, move);
+        Score score = -quiescence(-beta, -alpha, max_depth - 1);
+        move_generator.unmakeMove(board, move);
+
+        if (score >= beta)
+            return beta;
+        if (score > alpha)
+            alpha = score;
+
+        if (!timer.timeLeft())
+            return alpha;
+    }
+    return alpha;
+}
+
 // todo replace with actual evaluation function
-Score Engine::evaluateBoard(Board board)
+Score Engine::evaluateBoard()
 {
     counter++;
     Score material = 0;

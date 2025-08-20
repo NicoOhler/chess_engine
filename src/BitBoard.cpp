@@ -28,23 +28,6 @@ std::vector<bool> BitBoard::getBits(Bitboard board)
     return bits;
 }
 
-void BitBoard::printBitboard(Bitboard board)
-{
-    std::vector<bool> bits = getBits(board);
-    std::cout << std::endl;
-    for (Position row = NUM_ROWS - 1; row >= 0; row--)
-    {
-        std::cout << row + 1 << " ";
-        for (Position col = 0; col < NUM_COLS; col++)
-            std::cout << bits[row * NUM_COLS + col] ? "1" : "0";
-        std::cout << std::endl;
-    }
-    std::cout << "  ";
-    for (Position col = 0; col < NUM_COLS; col++)
-        std::cout << (char)('a' + col);
-    std::cout << std::endl
-              << std::endl;
-}
 int8 BitBoard::countSetBits(Bitboard board)
 {
     return __builtin_popcountll(board);
@@ -59,6 +42,11 @@ Position BitBoard::clearRightmostSetBit(Bitboard &board)
 Position BitBoard::getRightmostSetBit(Bitboard &board)
 {
     return __builtin_ctzll(board);
+}
+
+bool BitBoard::Board::isSquareOccupied(Position position)
+{
+    return occupied & (1ULL << position);
 }
 
 BitBoard::Board BitBoard::generateBoardFromFEN(std::string fen)
@@ -211,6 +199,24 @@ Piece BitBoard::Board::getPieceAt(Position position)
     if (black_king & mask)
         return BLACK_KING;
     return EMPTY;
+}
+
+void BitBoard::printBitboard(Bitboard board)
+{
+    std::vector<bool> bits = getBits(board);
+    std::cout << std::endl;
+    for (Position row = NUM_ROWS - 1; row >= 0; row--)
+    {
+        std::cout << row + 1 << " ";
+        for (Position col = 0; col < NUM_COLS; col++)
+            std::cout << bits[row * NUM_COLS + col] ? "1" : "0";
+        std::cout << std::endl;
+    }
+    std::cout << "  ";
+    for (Position col = 0; col < NUM_COLS; col++)
+        std::cout << (char)('a' + col);
+    std::cout << std::endl
+              << std::endl;
 }
 
 void BitBoard::printGameState(Board board)

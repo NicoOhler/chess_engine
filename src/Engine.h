@@ -18,9 +18,9 @@ public:
     uint64 startPerft(int depth, std::string fen = START_FEN, bool divide = true, uint64 expected = 0);
     void startUCI();
     void startSearch(int depth, std::string fen = START_FEN, Milliseconds time_limit = SEARCH_TIME_LIMIT);
-    GameState getGameState(Board &board, MoveList moves);
-    void iterativeDeepening(Board &board, int max_depth);
-    Score evaluateBoard(Board board);
+    GameState getGameState(MoveList moves);
+    void iterativeDeepening(int max_depth);
+    Score evaluateBoard();
 
 private:
     uint64 counter = 0;
@@ -29,12 +29,14 @@ private:
     std::stack<Move> move_history;
     MoveGenerator move_generator;
     Timer timer;
+    Board board;
 
-    void calculateMoveScores(MoveList &moves, Board &board);
+    void calculateMoveScores(MoveList &moves, Move best_move = NULL_MOVE);
     Move pickBestMove(MoveList &moves);
-    Score search(Board board, int depth, Score alpha, Score beta, bool root = false);
+    Score search(int depth, Score alpha, Score beta, bool root = false);
+    Score quiescence(Score alpha, Score beta, int max_depth = MAX_QUIESCENCE_DEPTH);
     Move getLegalMoveFromUser(MoveList legal_moves);
-    void applyAndTrackMove(Board &board, Move move);
+    void applyAndTrackMove(Move move);
     Piece getPromotionChoice();
-    uint64 perft(int depth, Board board, bool divide = false);
+    uint64 perft(int depth, bool divide = false);
 };

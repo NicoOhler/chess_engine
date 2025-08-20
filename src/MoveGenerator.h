@@ -96,15 +96,15 @@ private:
     void initializeKingMoves();
 
     // move generation
-    MoveList generatePseudoLegalMoves(Board &board);
+    MoveList generatePseudoLegalMoves(Board &board, bool interesting_only = false);
     void addPawnMoveWithPossiblePromotion(Board &board, MoveList &moves, Move move);
     void addCastlingMoves(Board &board, MoveList &moves);
-    void generateKingMoves(Board &board, MoveList &moves);
-    void generatePawnMoves(Board &board, MoveList &moves);
-    void generateKnightMoves(Board &board, MoveList &moves);
-    void generateBishopMoves(Board &board, MoveList &moves);
-    void generateRookMoves(Board &board, MoveList &moves);
-    void generateQueenMoves(Board &board, MoveList &moves);
+    void generateKingMoves(Board &board, MoveList &moves, bool interesting_only = false);
+    void generatePawnMoves(Board &board, MoveList &moves, bool interesting_only = false);
+    void generateKnightMoves(Board &board, MoveList &moves, bool interesting_only = false);
+    void generateBishopMoves(Board &board, MoveList &moves, bool interesting_only = false);
+    void generateRookMoves(Board &board, MoveList &moves, bool interesting_only = false);
+    void generateQueenMoves(Board &board, MoveList &moves, bool interesting_only = false);
 
     // precomputed attacks for sliding pieces (bishop and rook) using magic bitboards
     void initializeRookBishopAttacks();                                           // precomputes squares under attack for every position for every relevant occupancy
@@ -120,7 +120,7 @@ public:
     MoveGenerator();
     void makeMove(Board &board, Move &move);
     void unmakeMove(Board &board, Move move);
-    MoveList generateLegalMoves(Board board);
+    MoveList generateLegalMoves(Board board, bool interesting_only = false);
     bool squareUnderAttack(Board &board, Position square, bool white_is_attacker);
     bool squaresUnderAttack(Board &board, Bitboard squares, bool white_is_attacker);
 };

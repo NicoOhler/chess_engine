@@ -36,13 +36,18 @@ const Position ONE_ROW_DOWN_ONE_COL_LEFT = -9;
 const Position ONE_ROW_DOWN_ONE_COL_RIGHT = -7;
 
 // engine
-const Milliseconds SEARCH_TIME_LIMIT = 3000; // milliseconds
+const bool ENABLE_QUIESCENCE = false;
+const bool ENABLE_MOVE_SORTING = false;
+const Milliseconds SEARCH_TIME_LIMIT = 5000; // milliseconds
+const int MAX_SEARCH_DEPTH = 10;
+const int MAX_QUIESCENCE_DEPTH = 12;
 const Score PAWN_VALUE = 100;
 const Score KNIGHT_VALUE = 300;
 const Score BISHOP_VALUE = 330;
 const Score ROOK_VALUE = 500;
 const Score QUEEN_VALUE = 900;
 const Score KING_VALUE = 20000;
+const Score DELTA = 800;
 
 enum PIECES
 {

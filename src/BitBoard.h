@@ -84,6 +84,7 @@ namespace BitBoard
 
         Bitboard *getBitboardByPiece(Piece piece);
         Piece getPieceAt(Position position);
+        bool isSquareOccupied(Position position);
     };
 
     void movePiece(Bitboard &board, Position from, Position to);
