@@ -110,10 +110,10 @@ enum COLUMNS
 
 enum MODES
 {
-    M_UCI = 'u',
-    M_CONSOLE = 'c',
-    M_PERFT = 'p',
-    M_SEARCH = 's'
+    UCI_MODE = 'u',
+    PLAY_MODE = 'c',
+    PERFT_MODE = 'p',
+    SEARCH_MODE = 's'
 };
 
 enum GAME_STATE

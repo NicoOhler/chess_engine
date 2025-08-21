@@ -1,115 +1,5 @@
 #include "Engine.h"
 
-void Engine::startConsoleGame(std::string fen)
-{
-    board = generateBoardFromFEN(fen);
-    hash = zobrist_hash.getHash(board);
-    log(CHESS_BOARD, "Initialized board with FEN: " + fen);
-    printGameState(board);
-    MoveList moves = move_generator.generateLegalMoves(board);
-
-    do
-    {
-        Move move = getLegalMoveFromUser(moves);
-        if (move.promotion)
-            move.promotion = board.white_to_move ? toupper(move.promotion) : tolower(move.promotion);
-        applyAndTrackMove(move);
-        hash = zobrist_hash.updateHash(hash, move, board);
-        assert(hash == zobrist_hash.getHash(board), "hashes differ");
-        printGameState(board);
-        moves = move_generator.generateLegalMoves(board);
-    } while (getGameState(moves) == IN_PROGRESS);
-    std::cout << (getGameState(moves) == CHECKMATE ? "Checkmate" : "Draw") << std::endl;
-}
-
-Move Engine::getLegalMoveFromUser(MoveList legal_moves)
-{
-    std::string input;
-    while (true)
-    {
-        std::cout << "Enter your move: ";
-        std::getline(std::cin, input);
-
-        // print legal moves
-        if (input[0] == 'p')
-        {
-            std::cout << "Legal moves: " << legal_moves.size << std::endl;
-            for (int i = 0; i < legal_moves.size; i++)
-            {
-                Move legal_move = legal_moves.moves[i];
-                std::cout << "\t" << getSquareName(legal_move.from) << getSquareName(legal_move.to);
-                if (legal_move.promotion)
-                    std::cout << " (" << legal_move.promotion << ")";
-                std::cout << std::endl;
-            }
-            continue;
-        }
-
-        // undo previous move
-        if (input[0] == 'u')
-        {
-            if (!move_history.empty())
-                return UNDO_MOVE;
-            std::cout << "No move to undo" << std::endl;
-            continue;
-        }
-
-        // skip invalid moves
-        if (input[0] < 'a' || input[0] > 'h' || input[1] < '1' || input[1] > '8' || input[2] < 'a' || input[2] > 'h' || input[3] < '1' || input[3] > '8')
-        {
-            std::cout << "Invalid move. Please enter a move in the format: 'a2c3'" << std::endl;
-            continue;
-        }
-
-        // return move if legal else skip
-        Position from = 8 * (input[1] - '1') + (input[0] - 'a');
-        Position to = 8 * (input[3] - '1') + (input[2] - 'a');
-        for (int i = 0; i < legal_moves.size; i++)
-        {
-            Move legal_move = legal_moves.moves[i];
-            if (legal_move.from == from && legal_move.to == to)
-            {
-                if (legal_move.promotion)
-                    legal_move.promotion = getPromotionChoice();
-                return legal_move;
-            }
-        }
-        std::cout << "Illegal move. Please enter a legal move." << std::endl;
-    }
-}
-
-Piece Engine::getPromotionChoice()
-{
-    std::cout << "Choose promotion piece: " << std::endl;
-    std::cout << "Q - Queen" << std::endl;
-    std::cout << "R - Rook" << std::endl;
-    std::cout << "B - Bishop" << std::endl;
-    std::cout << "N - Knight" << std::endl;
-
-    Piece choice;
-    while (true)
-    {
-        std::cin >> choice;
-        if (choice == 'Q' || choice == 'R' || choice == 'B' || choice == 'N' || choice == 'q' || choice == 'r' || choice == 'b' || choice == 'n')
-            return choice;
-        std::cout << "Invalid choice. Please enter Q, R, B or N." << std::endl;
-    }
-}
-
-void Engine::applyAndTrackMove(Move move)
-{
-    if (move.piece == UNDO)
-    {
-        assert(!move_history.empty(), "No move to undo");
-        move = move_history.top();
-        move_history.pop();
-        move_generator.unmakeMove(board, move);
-        return;
-    }
-    move_history.push(move);
-    move_generator.makeMove(board, move);
-}
-
 GameState Engine::getGameState(MoveList moves)
 {
     if (!moves.empty() && board.half_move_clock < HALF_MOVE_CLOCK_LIMIT)
@@ -118,62 +8,8 @@ GameState Engine::getGameState(MoveList moves)
     return move_generator.squareUnderAttack(board, king_square, board.white_to_move) ? CHECKMATE : DRAW;
 }
 
-uint64 Engine::startPerft(int depth, std::string fen, bool divide, uint64 expected)
-{
-    assert(depth >= 1 && depth <= 10, "Perft depth must be between 1 and 10");
-    board = generateBoardFromFEN(fen);
-    log(PERFT, "Starting perft with depth: " + std::to_string(depth) + " and FEN: " + fen);
-    timer.start();
-    uint64 nodes = perft(depth, divide);
-    timer.stop(PERFT);
-    log(PERFT, "Nodes searched: " + std::to_string(nodes));
-    if (expected)
-    {
-        uint64 diff = nodes > expected ? nodes - expected : expected - nodes;
-        assert(nodes == expected, "Expected: " + std::to_string(expected) + "\nDiff: " + std::to_string(diff));
-    }
-    return nodes;
-}
-
-void Engine::startUCI()
-{
-    std::cout << "ChessEngine started in UCI mode" << std::endl;
-
-    std::string command;
-    while (std::getline(std::cin, command))
-    {
-        if (command == "uci")
-        {
-            std::cout << "id name Cumshot Chess Engine" << std::endl;
-            std::cout << "id author Nico Ohler" << std::endl;
-            std::cout << "uciok" << std::endl;
-        }
-        else if (command == "isready")
-            std::cout << "readyok" << std::endl;
-        // position [ fen fenstring | startpos ] moves move1 ... movei
-        else if (command.substr(0, 8) == "position")
-        {
-            std::string fen = command.substr(9);
-            if (fen == "startpos")
-                fen = START_FEN;
-            Board board = generateBoardFromFEN(fen);
-            log(CHESS_BOARD, "Initialized board with FEN: " + fen);
-        }
-        else if (command.substr(0, 4) == "go ")
-        {
-            // parse depth or other parameters if needed
-            int depth = 1; // default depth
-            startPerft(depth);
-        }
-        else if (command == "quit")
-            exit(0);
-    }
-}
-
 uint64 Engine::perft(int depth, bool divide)
 {
-    // if (depth == 0)
-    //     return 1;
     MoveList legal_moves = move_generator.generateLegalMoves(board);
     if (depth == 1)
         return legal_moves.size;
@@ -192,26 +28,17 @@ uint64 Engine::perft(int depth, bool divide)
     return total_nodes;
 }
 
-void Engine::startSearch(int depth, std::string fen, Milliseconds time_limit)
+// iterative deepening
+Move Engine::search(int max_depth)
 {
-    board = generateBoardFromFEN(fen);
-    log(CHESS_BOARD, "Starting search with FEN: " + fen);
-    counter = 0;
-    timer.limit = time_limit;
-    iterativeDeepening(depth);
-    log(SEARCH, "Search score: " + std::to_string(best_score));
-    log(SEARCH, "Evaluated nodes: " + std::to_string(counter));
-}
-
-void Engine::iterativeDeepening(int max_depth)
-{
+    evaluated_nodes = 0;
     best_score = 0;
     best_move = NULL_MOVE; // no previous best move for depth 1
 
     timer.start();
     for (int depth = 1; depth <= max_depth && timer.timeLeft(); depth++)
     {
-        best_score = search(depth, NEG_INFINITY, POS_INFINITY, true);
+        best_score = negamax_search(depth, NEG_INFINITY, POS_INFINITY, true);
         log(SEARCH, "Depth " + std::to_string(depth) + " best move " + best_move.toString() +
                         " score " + std::to_string(best_score));
     }
@@ -219,6 +46,10 @@ void Engine::iterativeDeepening(int max_depth)
         timer.stop(SEARCH);
     else
         log(SEARCH, "Search interrupted due to time limit.");
+
+    log(SEARCH, "Search score: " + std::to_string(best_score));
+    log(SEARCH, "Evaluated nodes: " + std::to_string(evaluated_nodes));
+    return best_move;
 }
 
 void Engine::calculateMoveScores(MoveList &moves, Move best_move)
@@ -286,7 +117,7 @@ Move Engine::pickBestMove(MoveList &moves)
 }
 
 // negamax with alpha beta pruning and quiescence
-Score Engine::search(int depth, Score alpha, Score beta, bool root)
+Score Engine::negamax_search(int depth, Score alpha, Score beta, bool root)
 {
     // immediately return evaluation for leaf nodes (max depth, draw, stalemate or checkmate)
     if (depth == 0)
@@ -309,7 +140,7 @@ Score Engine::search(int depth, Score alpha, Score beta, bool root)
         Move move = ENABLE_MOVE_SORTING ? legal_moves.moves[i] : pickBestMove(legal_moves);
         move_generator.makeMove(board, move);
         // alpha beta are swapped since the opponent tries to minimize our score
-        Score score = -search(depth - 1, -beta, -alpha);
+        Score score = -negamax_search(depth - 1, -beta, -alpha);
         move_generator.unmakeMove(board, move);
         if (score > max)
         {
@@ -376,7 +207,7 @@ Score Engine::quiescence(Score alpha, Score beta, int max_depth)
 // todo replace with actual evaluation function
 Score Engine::evaluateBoard()
 {
-    counter++;
+    evaluated_nodes++;
     Score material = 0;
     material += countSetBits(board.white_pawns) * PAWN_VALUE;
     material += countSetBits(board.white_knights) * KNIGHT_VALUE;
@@ -399,73 +230,34 @@ Score Engine::evaluateBoard()
     return score;
 }
 
-void printHelp(std::string executable_name)
+void Engine::initializeStartPosition(std::string fen)
 {
-    std::cout << "Usage: " << executable_name << " [-m mode] [-f FEN] [-p ply] [-d] [-h]\n"
-              << "  -m mode: Set the engine mode (u for UCI, c for console, p for perft)\n"
-              << "  -f FEN: Start the game with the given FEN string\n"
-              << "  -p ply: Run perft/search with the given ply/depth/number of half moves)\n"
-              << "  -d: Divide perft results\n"
-              << "  -t: Set search time (in milliseconds)\n"
-              << "  -h: Show this help message" << std::endl;
+    board = generateBoardFromFEN(fen);
+    log(CHESS_BOARD, "Initialized board with FEN: " + fen);
 }
 
-int main(int argc, char *argv[])
+void Engine::makeMove(Move move)
 {
-    // Initialize engine parameters based on command line arguments
-    Mode mode = M_UCI;
-    std::string start_fen = START_FEN;
-    int depth = 0;
-    bool divide = false;
-    uint64 expected_perft = 0;
-    Milliseconds search_time = SEARCH_TIME_LIMIT;
-    for (int i = 1; i < argc; i++)
-    {
-        if (std::string(argv[i]) == "-m" && i + 1 < argc)
-            mode = argv[++i][0];
-        else if (std::string(argv[i]) == "-f" && i + 1 < argc)
-            start_fen = argv[++i];
-        else if (std::string(argv[i]) == "-p" && i + 1 < argc)
-            depth = std::stoi(argv[++i]);
-        else if (std::string(argv[i]) == "-e" && i + 1 < argc)
-            expected_perft = std::stoull(argv[++i]);
-        else if (std::string(argv[i]) == "-d")
-            divide = true;
-        else if (std::string(argv[i]) == "-t" && i + 1 < argc)
-            search_time = std::stoull(argv[++i]);
-        else if (std::string(argv[i]) == "-h")
-        {
-            printHelp(argv[0]);
-            exit(0);
-        }
-        else
-        {
-            std::cout << "Unknown option: " << argv[i] << std::endl;
-            printHelp(argv[0]);
-            exit(1);
-        }
-    }
+    move_generator.makeMove(board, move);
+}
 
-    // start engine with given parameters
-    Engine engine;
-    switch (mode)
-    {
-    case M_UCI:
-        engine.startUCI();
-        break;
-    case M_CONSOLE:
-        engine.startConsoleGame(start_fen);
-        break;
-    case M_PERFT:
-        engine.startPerft(depth, start_fen, divide, expected_perft);
-        break;
-    case M_SEARCH:
-        engine.startSearch(depth, start_fen, search_time);
-        break;
-    default:
-        std::cout << "Invalid mode. Use 'u' for UCI, 'c' for console or 'p' for perft." << std::endl;
-        exit(1);
-        break;
-    }
-    exit(0);
+void Engine::unmakeMove(Move move)
+{
+    move_generator.unmakeMove(board, move);
+}
+
+// getter and setter
+void Engine::setTimeLimit(Milliseconds time_limit)
+{
+    timer.limit = time_limit;
+}
+
+Board Engine::getBoard()
+{
+    return board; // copy
+}
+
+MoveList Engine::getLegalMoves()
+{
+    return move_generator.generateLegalMoves(board);
 }

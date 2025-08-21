@@ -392,7 +392,7 @@ void MoveGenerator::generateKingMoves(Board &board, MoveList &moves, bool intere
     }
 
     // castling moves
-    if (interesting_only && !squareUnderAttack(board, from, !white_to_move))
+    if (!interesting_only && !squareUnderAttack(board, from, !white_to_move))
         addCastlingMoves(board, moves);
 }
 
@@ -449,10 +449,8 @@ void MoveGenerator::generatePawnMoves(Board &board, MoveList &moves, bool intere
         if (attack)
             addPawnMoveWithPossiblePromotion(board, moves, Move{from, to_right, piece});
         else if (en_passant_right)
-        {
             moves.append(Move{from, to_right, piece});
-            // log(PAWN_MOVE, "Found en passant move from " + getSquareName(from) + " to " + getSquareName(to_right) + ".");
-        }
+        // log(PAWN_MOVE, "Found en passant move from " + getSquareName(from) + " to " + getSquareName(to_right) + ".");
 
         // attack left
         Position to_left = from + direction_left;
@@ -461,10 +459,8 @@ void MoveGenerator::generatePawnMoves(Board &board, MoveList &moves, bool intere
         if (attack)
             addPawnMoveWithPossiblePromotion(board, moves, Move{from, to_left, piece});
         else if (en_passant_left)
-        {
             moves.append(Move{from, to_left, piece});
-            // log(PAWN_MOVE, "Found en passant move from " + getSquareName(from) + " to " + getSquareName(to_left) + ".");
-        }
+        // log(PAWN_MOVE, "Found en passant move from " + getSquareName(from) + " to " + getSquareName(to_left) + ".");
     }
 }
 
@@ -668,9 +664,8 @@ void MoveGenerator::makeMove(Board &board, Move &move)
     handleCastling(board, move);
     if (move.promotion)
     {
-        // move.promotion = board.white_to_move ? toupper(move.promotion) : tolower(move.promotion);
         BitBoard::clear(*piece, move.to);
-        BitBoard::set(*board.getBitboardByPieceSymbol(move.promotion), move.to);
+        BitBoard::set(*board.getBitboardByPiece(move.promotion), move.to);
     }
     board.white_to_move = !board.white_to_move;
     board.half_move_clock++;
@@ -689,7 +684,7 @@ void MoveGenerator::unmakeMove(Board &board, Move move)
     // replace promoted piece with pawn
     if (move.promotion)
     {
-        Bitboard *promoted_piece = board.getBitboardByPieceSymbol(move.promotion);
+        Bitboard *promoted_piece = board.getBitboardByPiece(move.promotion);
         BitBoard::clear(*promoted_piece, move.to);
         BitBoard::set(*piece, move.to);
     }

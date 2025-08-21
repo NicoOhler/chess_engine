@@ -13,7 +13,7 @@ void ZobristHash::initialize()
         en_passant_file[i] = mt();
 }
 
-uint64 ZobristHash::getHash(Board &board)
+uint64 ZobristHash::computeInitialHash(Board &board)
 {
     uint64 hash = 0;
     // add all pieces
@@ -41,7 +41,6 @@ uint64 ZobristHash::getHash(Board &board)
         hash ^= castling_rights[2];
     if (board.castling_rights & BLACK_QUEEN_SIDE_CASTLING)
         hash ^= castling_rights[3];
-    std::cout << hash << std::endl;
     return hash;
 }
 
@@ -55,18 +54,18 @@ uint64 ZobristHash::updateHash(uint64 hash, Move move, Board &board)
     hash ^= piece_at_square[move.from][move.piece];
 
     // remove previous en passant
-    if (move.previous_en_passant)
+    bool is_pawn_move = move.piece == white_to_move ? WHITE_PAWN : BLACK_PAWN;
+    if (move.previous_en_passant != NO_EN_PASSANT)
     {
         hash ^= en_passant_file[move.previous_en_passant % 8];
-        bool pawn_move = move.piece == white_to_move ? WHITE_PAWN : BLACK_PAWN;
         // apply en passant capture
-        if (move.to == move.previous_en_passant && pawn_move)
+        if (move.to == move.previous_en_passant && is_pawn_move)
             hash ^= piece_at_square[move.to + (white_to_move ? DOWN : UP)][white_to_move ? BLACK_PAWN : WHITE_PAWN];
     }
 
     // add new en passant square
-    if (board.en_passant != NO_EN_PASSANT)
-        hash ^= en_passant_file[board.en_passant % 8];
+    if (is_pawn_move && (abs(move.from - move.to) == 16))
+        hash ^= en_passant_file[move.to % 8];
 
     // remove captured piece
     if (move.captured_piece != EMPTY)
@@ -102,6 +101,5 @@ uint64 ZobristHash::updateHash(uint64 hash, Move move, Board &board)
         if ((move.previous_castling_rights ^ board.castling_rights) & BLACK_QUEEN_SIDE_CASTLING)
             hash ^= castling_rights[3];
     }
-    std::cout << hash << std::endl;
     return hash;
 }
