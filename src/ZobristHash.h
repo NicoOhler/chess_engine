@@ -6,7 +6,6 @@
 
 using namespace BitBoard;
 
-typedef uint64 Hash;
 const uint64 RAND_SEED = 42; // for reproducibility
 
 class ZobristHash
@@ -15,7 +14,7 @@ public:
     ZobristHash() { initialize(); }
 
     uint64 computeInitialHash(Board &board);
-    uint64 updateHash(uint64 hash, Move move, Board &board);
+    uint64 updateHash(Move move, Board &board);
 
 private:
     uint64 whites_turn;

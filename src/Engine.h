@@ -1,6 +1,7 @@
 #pragma once
 #include "MoveGenerator.h"
 #include "ZobristHash.h"
+#include "TranspositionTable.h"
 #include "Timer.h"
 #include "definitions.h"
 #include <iostream>
@@ -12,7 +13,7 @@ class Engine
 {
 public:
     void initializeStartPosition(std::string fen);
-    Move search(int max_depth);
+    Move search();
     uint64 perft(int depth, bool divide = false);
     Score evaluateBoard();
     void makeMove(Move move);
@@ -25,16 +26,19 @@ public:
     Board getBoard();
 
 private:
-    uint64 evaluated_nodes = 0;
-    Move best_move = NULL_MOVE;
-    Score best_score = 0;
+    Board board;
     MoveGenerator move_generator;
+    TranspositionTable transposition_table;
     ZobristHash zobrist;
     Timer timer;
-    Board board;
 
-    void calculateMoveScores(MoveList &moves, Move best_move = NULL_MOVE);
+    uint64 evaluated_nodes = 0;
+    Score best_root_score = 0;
+    Move best_root_move = NULL_MOVE;
+
+    void calculateMoveScores(MoveList &moves);
+    void sortMoves(MoveList &moves);
     Move pickBestMove(MoveList &moves);
-    Score negamax_search(int depth, Score alpha, Score beta, bool root = false);
+    Score negamax_search(int depth, int remaining_depth, Score alpha, Score beta);
     Score quiescence(Score alpha, Score beta, int max_depth = MAX_QUIESCENCE_DEPTH);
 };

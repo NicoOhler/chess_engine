@@ -81,6 +81,7 @@ namespace BitBoard
         Position en_passant;
         Bitboard castling_rights;
         Clock half_move_clock;
+        Hash hash;
 
         Bitboard *getBitboardByPiece(Piece piece);
         Bitboard *getBitboardByPieceSymbol(Piece piece);

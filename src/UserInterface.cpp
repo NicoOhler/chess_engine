@@ -8,13 +8,13 @@ void UserInterface::start()
         startUCI();
         break;
     case PLAY_MODE:
-        startGameLoop(start_fen);
+        startGameLoop();
         break;
     case PERFT_MODE:
-        startPerft(depth, start_fen, divide, expected_perft);
+        startPerft();
         break;
     case SEARCH_MODE:
-        startSearch(depth, start_fen, search_time);
+        startSearch();
         break;
     default:
         std::cout << "Invalid mode. Use 'u' for UCI, 'c' for console, 'p' for perft or 's' for search." << std::endl;
@@ -23,27 +23,25 @@ void UserInterface::start()
     }
 }
 
-void UserInterface::startSearch(int depth, std::string fen, Milliseconds time_limit)
+void UserInterface::startSearch()
 {
     engine.initializeStartPosition(fen);
-    log(CHESS_BOARD, "Starting search with a time limit of " + std::to_string(time_limit) + "ms");
-    engine.setTimeLimit(time_limit);
-    engine.search(depth);
+    log(CHESS_BOARD, "Starting search with a time limit of " + std::to_string(search_time) + "ms");
+    engine.search();
 }
 
-void UserInterface::startPerft(int depth, std::string fen, bool divide, uint64 expected)
+void UserInterface::startPerft()
 {
-    assert(depth >= 1, "Perft depth must be at least 1");
     engine.initializeStartPosition(fen);
     log(PERFT, "Starting perft with a depth of" + std::to_string(depth));
     timer.start();
-    uint64 nodes = engine.perft(depth, divide);
+    uint64 nodes = engine.perft(depth > 0 ? depth : MAX_SEARCH_DEPTH, divide);
     timer.stop(PERFT);
     log(PERFT, "Nodes searched: " + std::to_string(nodes));
-    if (expected)
+    if (expected_perft)
     {
-        uint64 difference = nodes > expected ? nodes - expected : expected - nodes;
-        assert(nodes == expected, "Expected: " + std::to_string(expected) + "\nDiff: " + std::to_string(difference));
+        uint64 difference = nodes > expected_perft ? nodes - expected_perft : expected_perft - nodes;
+        assert(nodes == expected_perft, "Expected: " + std::to_string(expected_perft) + "\nDiff: " + std::to_string(difference));
     }
 }
 
@@ -72,23 +70,25 @@ void UserInterface::startUCI()
         else if (command.substr(0, 4) == "go ")
         {
             // parse depth or other parameters if needed
-            int depth = 1; // default depth
-            startPerft(depth);
+            startPerft();
         }
         else if (command == "quit")
             exit(0);
     }
 }
 
-void UserInterface::startGameLoop(std::string fen)
+void UserInterface::startGameLoop()
 {
     engine.initializeStartPosition(fen);
     printGameState(engine.getBoard());
     MoveList moves = engine.getLegalMoves();
+    bool ai_turn = true;
 
     do
     {
-        Move move = getLegalMoveFromUser(moves);
+        Move move = ai_turn ? engine.search() : getLegalMoveFromUser(moves);
+        if (play_vs_ai)
+            ai_turn = !ai_turn;
         applyAndTrackMove(move);
         printGameState(engine.getBoard());
         moves = engine.getLegalMoves();
@@ -104,6 +104,13 @@ void UserInterface::applyAndTrackMove(Move move)
         move = move_history.top();
         move_history.pop();
         engine.unmakeMove(move);
+        // also undo ai move
+        if (play_vs_ai)
+        {
+            move = move_history.top();
+            move_history.pop();
+            engine.unmakeMove(move);
+        }
         return;
     }
     move_history.push(move);
@@ -210,7 +217,7 @@ void UserInterface::parseParameters(int argc, char *argv[])
         if (std::string(argv[i]) == "-m" && i + 1 < argc)
             mode = argv[++i][0];
         else if (std::string(argv[i]) == "-f" && i + 1 < argc)
-            start_fen = argv[++i];
+            fen = argv[++i];
         else if (std::string(argv[i]) == "-p" && i + 1 < argc)
             depth = std::stoi(argv[++i]);
         else if (std::string(argv[i]) == "-e" && i + 1 < argc)
@@ -218,7 +225,10 @@ void UserInterface::parseParameters(int argc, char *argv[])
         else if (std::string(argv[i]) == "-d")
             divide = true;
         else if (std::string(argv[i]) == "-t" && i + 1 < argc)
+        {
             search_time = std::stoull(argv[++i]);
+            engine.setTimeLimit(search_time);
+        }
         else if (std::string(argv[i]) == "-h")
         {
             printHelp(argv[0]);
@@ -238,7 +248,7 @@ void UserInterface::printHelp(std::string executable_name)
     std::cout << "Usage: " << executable_name << " [-m mode] [-f FEN] [-p ply] [-d] [-h]\n"
               << "  -m mode: Set the engine mode (u for UCI, c for console, p for perft)\n"
               << "  -f FEN: Start the game with the given FEN string\n"
-              << "  -p ply: Run perft/search with the given ply/depth/number of half moves)\n"
+              << "  -p ply: Run perft with the given ply/depth/number of half moves)\n"
               << "  -d: Divide perft results\n"
               << "  -t: Set search time (in milliseconds)\n"
               << "  -h: Show this help message" << std::endl;

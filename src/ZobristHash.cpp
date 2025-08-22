@@ -44,11 +44,13 @@ uint64 ZobristHash::computeInitialHash(Board &board)
     return hash;
 }
 
-uint64 ZobristHash::updateHash(uint64 hash, Move move, Board &board)
+uint64 ZobristHash::updateHash(Move move, Board &board)
 {
+    uint64 &hash = board.hash;
+    bool white_to_move = move.piece <= WHITE_KING;
+
     // toggle whose turn it is
     hash ^= whites_turn;
-    bool white_to_move = move.piece <= WHITE_KING;
 
     // remove piece from previous position
     hash ^= piece_at_square[move.from][move.piece];
@@ -101,5 +103,6 @@ uint64 ZobristHash::updateHash(uint64 hash, Move move, Board &board)
         if ((move.previous_castling_rights ^ board.castling_rights) & BLACK_QUEEN_SIDE_CASTLING)
             hash ^= castling_rights[3];
     }
+
     return hash;
 }
